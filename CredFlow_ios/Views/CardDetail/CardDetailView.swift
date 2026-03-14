@@ -8,10 +8,12 @@ struct CardDetailView: View {
     @State private var editingExpense: Expense?
 
     var onCardUpdated: ((Card) -> Void)?
+    var onCardDeleted: (() -> Void)?
 
-    init(card: Card, onCardUpdated: ((Card) -> Void)? = nil) {
+    init(card: Card, onCardUpdated: ((Card) -> Void)? = nil, onCardDeleted: (() -> Void)? = nil) {
         _vm = State(initialValue: CardDetailViewModel(card: card))
         self.onCardUpdated = onCardUpdated
+        self.onCardDeleted = onCardDeleted
     }
 
     private var cardBg: Color {
@@ -168,9 +170,19 @@ struct CardDetailView: View {
             .padding(.trailing, 24)
             .padding(.bottom, 28)
         }
-        .navigationTitle(vm.card.name)
+        .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+            ToolbarItem(placement: .principal) {
+                VStack(spacing: 1) {
+                    Text(vm.card.name)
+                        .font(.system(size: 16, weight: .semibold))
+                    Text(vm.card.provider.uppercased())
+                        .font(.system(size: 10, weight: .regular))
+                        .foregroundStyle(.secondary)
+                        .tracking(1.5)
+                }
+            }
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button {
                     vm.showEditCard = true
@@ -193,7 +205,9 @@ struct CardDetailView: View {
             EditCardView(card: vm.card) { updated in
                 vm.card = updated
                 onCardUpdated?(updated)
-            } onDeleted: {}
+            } onDeleted: {
+                    onCardDeleted?()
+                }
         }
         .task { await vm.loadExpenses() }
     }

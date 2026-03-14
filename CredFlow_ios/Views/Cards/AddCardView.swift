@@ -158,7 +158,9 @@ struct AddCardView: View {
                                 formSection(title: "Réseau de paiement") {
                                     Picker("Réseau", selection: $network) {
                                         ForEach(CardNetwork.allCases, id: \.self) { n in
-                                            Text(n.displayName).tag(n)
+                                            Text(n.displayName)
+                                                .font(.system(size: 13, weight: .thin))
+                                                .tag(n)
                                         }
                                     }
                                     .pickerStyle(.segmented)
@@ -202,7 +204,7 @@ struct AddCardView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Annuler") { dismiss() }
-                        .foregroundStyle(Color.adaptiveBg(colorScheme))
+                        .tint(Color.adaptiveBg(colorScheme))
                 }
             }
         }

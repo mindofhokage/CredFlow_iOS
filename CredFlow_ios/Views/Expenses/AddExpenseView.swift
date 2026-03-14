@@ -250,7 +250,7 @@ struct AddExpenseView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Annuler") { dismiss() }
-                        .foregroundStyle(Color.adaptiveBg(colorScheme))
+                        .tint(Color.adaptiveBg(colorScheme))
                 }
             }
             .animation(.spring(response: 0.3, dampingFraction: 0.85), value: vm.showDeleteConfirm)

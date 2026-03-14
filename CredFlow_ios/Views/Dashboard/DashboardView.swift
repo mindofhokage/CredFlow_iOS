@@ -18,55 +18,51 @@ struct DashboardView: View {
                 PremiumBackground()
 
                 ScrollView {
+                    VStack(alignment: .leading, spacing: 24) {
 
-                    VStack(alignment: .leading, spacing: 28) {
-                        // Header
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Bonjour 👋")
-                                .font(.system(size: 14))
-                                .foregroundStyle(.secondary)
-                            HStack(spacing: 0) {
-                                Text("Mes ")
-                                    .font(.system(size: 32, weight: .thin))
-                                Text("Cartes")
-                                    .font(.system(size: 32, weight: .black))
-                            }
-                        }
-                        .padding(.horizontal, 20)
-                        .padding(.top, 8)
+                        // ── Header ───────────────────────────────────────
+                        headerSection
+                            .padding(.horizontal, 20)
+                            .padding(.top, 4)
 
-                        // Summary pill
+                        // ── Stats ────────────────────────────────────────
                         if !vm.cards.isEmpty {
-                            HStack(spacing: 20) {
-                                summaryPill(
-                                    icon: "creditcard.fill",
-                                    value: "\(vm.cards.count)",
-                                    label: vm.cards.count > 1 ? "Cartes" : "Carte"
-                                )
-                                Divider().frame(height: 30)
-                                summaryPill(
-                                    icon: "calendar",
-                                    value: currentMonthName(),
-                                    label: "Période active"
-                                )
-                            }
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 14)
-                            .background(
-                                RoundedRectangle(cornerRadius: 16)
-                                    .fill(colorScheme == .dark ? Color(white: 0.13) : Color.white)
-                                    .shadow(color: .black.opacity(0.05), radius: 10, y: 2)
-                            )
-                            .padding(.horizontal, 20)
+                            statsSection
+                                .padding(.horizontal, 20)
                         }
 
-                        // Cards
+                        // ── Cards ────────────────────────────────────────
                         if vm.isLoading {
-                            HStack { Spacer(); ProgressView(); Spacer() }.padding(.top, 40)
+                            HStack { Spacer(); ProgressView(); Spacer() }
+                                .padding(.top, 40)
                         } else if vm.cards.isEmpty {
                             emptyState
                         } else {
-                            stackedCardsSection
+                            VStack(alignment: .leading, spacing: 12) {
+                                // Section label
+                                HStack {
+                                    PremiumSectionLabel(title: "Mes cartes")
+                                    Spacer()
+                                    if vm.cards.count > 1 {
+                                        Button {
+                                            withAnimation(.spring(response: 0.42, dampingFraction: 0.80)) {
+                                                isStackExpanded.toggle()
+                                            }
+                                        } label: {
+                                            HStack(spacing: 4) {
+                                                Text(isStackExpanded ? "Réduire" : "Tout voir")
+                                                    .font(.system(size: 12, weight: .medium))
+                                                Image(systemName: isStackExpanded ? "chevron.up" : "chevron.down")
+                                                    .font(.system(size: 10, weight: .semibold))
+                                            }
+                                            .foregroundStyle(Color.adaptiveBg(colorScheme))
+                                        }
+                                    }
+                                }
+                                .padding(.horizontal, 20)
+
+                                stackedCardsSection
+                            }
                         }
 
                         if let err = vm.errorMessage {
@@ -78,21 +74,19 @@ struct DashboardView: View {
                 }
                 .refreshable { await vm.loadCards() }
 
-                // FAB
+                // ── FAB ──────────────────────────────────────────────────
                 VStack {
                     Spacer()
                     HStack {
                         Spacer()
-                        Button {
-                            vm.showAddCard = true
-                        } label: {
+                        Button { vm.showAddCard = true } label: {
                             Image(systemName: "plus")
                                 .font(.system(size: 22, weight: .semibold))
                                 .foregroundStyle(Color.adaptiveFg(colorScheme))
-                                .frame(width: 64, height: 64)
+                                .frame(width: 60, height: 60)
                                 .background(Color.adaptiveBg(colorScheme))
                                 .clipShape(Circle())
-                                .shadow(color: Color.adaptiveBg(colorScheme).opacity(0.35), radius: 16, y: 6)
+                                .shadow(color: Color.adaptiveBg(colorScheme).opacity(0.30), radius: 14, y: 5)
                         }
                         .padding(.trailing, 24)
                         .padding(.bottom, 32)
@@ -103,6 +97,9 @@ struct DashboardView: View {
             .navigationDestination(for: Card.self) { card in
                 CardDetailView(card: card) { updated in
                     vm.updateCard(updated)
+                } onCardDeleted: {
+                    vm.cards.removeAll { $0.id == card.id }
+                    path.removeLast()
                 }
             }
             .toolbar {
@@ -113,18 +110,16 @@ struct DashboardView: View {
                     }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    HStack(spacing: 8) {
-                        Menu {
-                            Button(role: .destructive) {
-                                Task { try? await authService.signOut() }
-                            } label: {
-                                Label("Se déconnecter", systemImage: "rectangle.portrait.and.arrow.right")
-                            }
+                    Menu {
+                        Button(role: .destructive) {
+                            Task { try? await authService.signOut() }
                         } label: {
-                            Image(systemName: "person.circle")
-                                .font(.title3)
-                                .foregroundStyle(Color.adaptiveBg(colorScheme))
+                            Label("Se déconnecter", systemImage: "rectangle.portrait.and.arrow.right")
                         }
+                    } label: {
+                        Image(systemName: "person.circle")
+                            .font(.title3)
+                            .foregroundStyle(Color.adaptiveBg(colorScheme))
                     }
                 }
             }
@@ -136,30 +131,111 @@ struct DashboardView: View {
         .task { await vm.loadCards() }
     }
 
+    // MARK: - Header
+
+    @ViewBuilder
+    private var headerSection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(currentDateString())
+                .font(.system(size: 13, weight: .regular))
+                .foregroundStyle(.tertiary)
+                .textCase(.uppercase)
+                .tracking(0.5)
+            HStack(spacing: 0) {
+                Text("Mes ")
+                    .font(.system(size: 30, weight: .thin))
+                Text("Cartes")
+                    .font(.system(size: 30, weight: .black))
+            }
+        }
+    }
+
+    // MARK: - Stats
+
+    @ViewBuilder
+    private var statsSection: some View {
+        let totalLimit = vm.cards.reduce(0.0) { $0 + $1.creditLimit }
+        let cardBg = colorScheme == .dark ? Color(white: 0.13) : Color.white
+
+        VStack(spacing: 14) {
+            HStack(spacing: 0) {
+                statCell(
+                    value: fmtCurrency(totalLimit),
+                    label: "Limite totale"
+                )
+                Rectangle()
+                    .fill(Color.secondary.opacity(0.15))
+                    .frame(width: 1, height: 36)
+                statCell(
+                    value: "\(vm.cards.count)",
+                    label: vm.cards.count > 1 ? "Cartes" : "Carte"
+                )
+                Rectangle()
+                    .fill(Color.secondary.opacity(0.15))
+                    .frame(width: 1, height: 36)
+                statCell(
+                    value: currentMonthName(),
+                    label: "Période active"
+                )
+            }
+
+            // Active cards indicator dots
+            HStack(spacing: 5) {
+                ForEach(0..<vm.cards.count, id: \.self) { i in
+                    Capsule()
+                        .fill(Color.adaptiveBg(colorScheme).opacity(isStackExpanded || i == 0 ? 1.0 : 0.25))
+                        .frame(width: isStackExpanded || i == 0 ? 16 : 6, height: 4)
+                        .animation(.spring(response: 0.35, dampingFraction: 0.8), value: isStackExpanded)
+                }
+                Spacer()
+                Image(systemName: "lock.shield")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.tertiary)
+                Text("Sécurisé")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.tertiary)
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 18)
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(cardBg)
+                .shadow(color: .black.opacity(colorScheme == .dark ? 0 : 0.06), radius: 12, y: 3)
+        )
+    }
+
+    @ViewBuilder
+    private func statCell(value: String, label: String) -> some View {
+        VStack(spacing: 4) {
+            Text(value)
+                .font(.system(size: 17, weight: .bold))
+                .foregroundStyle(.primary)
+                .minimumScaleFactor(0.7)
+                .lineLimit(1)
+            Text(label)
+                .font(.system(size: 11))
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+    }
+
     // MARK: - Stacked Cards
 
     @ViewBuilder
     private var stackedCardsSection: some View {
         let n = vm.cards.count
-        let collapsedH = cardH + peekH * CGFloat(n - 1)
-        let expandedH  = cardH * CGFloat(n) + expandedGap * CGFloat(n - 1)
-        let totalH     = isStackExpanded ? expandedH : collapsedH
 
         VStack(spacing: 10) {
             ZStack(alignment: .top) {
-                ForEach(Array(vm.cards.enumerated()), id: \.element.id) { idx, card in
+                ForEach(Array(vm.cards.enumerated().reversed()), id: \.element.id) { idx, card in
                     let i = CGFloat(idx)
-                    let yOff = isStackExpanded
+                    let topPad = isStackExpanded
                         ? (cardH + expandedGap) * i
                         : peekH * i
 
                     CreditCardWidget(card: card)
-                        .scaleEffect(
-                            isStackExpanded ? 1.0 : max(1.0 - i * 0.025, 0.88),
-                            anchor: .top
-                        )
-                        .offset(y: yOff)
-                        .zIndex(Double(n - idx))
+                        .padding(.top, topPad)
                         .onTapGesture {
                             if n == 1 || isStackExpanded {
                                 path.append(card)
@@ -179,66 +255,65 @@ struct DashboardView: View {
                         .animation(.spring(response: 0.42, dampingFraction: 0.80), value: isStackExpanded)
                 }
             }
-            .frame(height: totalH)
-            .animation(.spring(response: 0.42, dampingFraction: 0.80), value: isStackExpanded)
+        }
+        .frame(maxWidth: .infinity)
+    }
 
-            // Toggle pill (only when multiple cards)
-            if n > 1 {
-                Button {
-                    withAnimation(.spring(response: 0.42, dampingFraction: 0.80)) {
-                        isStackExpanded.toggle()
-                    }
-                } label: {
-                    HStack(spacing: 5) {
-                        Image(systemName: isStackExpanded ? "chevron.up" : "square.stack.fill")
-                            .font(.system(size: 11, weight: .semibold))
-                        Text(isStackExpanded ? "Réduire" : "\(n) cartes")
-                            .font(.system(size: 12, weight: .medium))
-                    }
+    // MARK: - Empty state
+
+    private var emptyState: some View {
+        VStack(spacing: 28) {
+            // Icon
+            ZStack {
+                RoundedRectangle(cornerRadius: 28)
+                    .fill(colorScheme == .dark ? Color(white: 0.13) : Color.white)
+                    .frame(width: 88, height: 88)
+                    .shadow(color: .black.opacity(0.06), radius: 12, y: 4)
+                Image(systemName: "creditcard")
+                    .font(.system(size: 36, weight: .thin))
                     .foregroundStyle(.secondary)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 7)
-                    .background(
-                        Capsule()
-                            .fill(colorScheme == .dark ? Color(white: 0.18) : Color.white)
-                            .shadow(color: .black.opacity(0.07), radius: 6, y: 2)
-                    )
+            }
+
+            VStack(spacing: 8) {
+                Text("Aucune carte")
+                    .font(.system(size: 18, weight: .semibold))
+                Text("Ajoutez votre première carte de crédit\npour suivre vos dépenses")
+                    .font(.system(size: 14))
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .lineSpacing(2)
+            }
+
+            Button {
+                vm.showAddCard = true
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "plus")
+                        .font(.system(size: 13, weight: .semibold))
+                    Text("Ajouter une carte")
+                        .font(.system(size: 14, weight: .semibold))
                 }
-                .transition(.opacity)
+                .foregroundStyle(Color.adaptiveFg(colorScheme))
+                .padding(.horizontal, 24)
+                .padding(.vertical, 13)
+                .background(Color.adaptiveBg(colorScheme))
+                .clipShape(Capsule())
+                .shadow(color: Color.adaptiveBg(colorScheme).opacity(0.25), radius: 10, y: 4)
             }
         }
         .frame(maxWidth: .infinity)
+        .padding(.vertical, 60)
     }
 
     // MARK: - Helpers
 
-    @ViewBuilder
-    private func summaryPill(icon: String, value: String, label: String) -> some View {
-        HStack(spacing: 8) {
-            Image(systemName: icon)
-                .font(.system(size: 14))
-                .foregroundStyle(.secondary)
-            VStack(alignment: .leading, spacing: 0) {
-                Text(value).font(.system(size: 15, weight: .semibold))
-                Text(label).font(.system(size: 11)).foregroundStyle(.secondary)
-            }
-        }
-    }
-
-    private var emptyState: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "creditcard")
-                .font(.system(size: 48, weight: .thin))
-                .foregroundStyle(.secondary)
-            Text("Aucune carte")
-                .font(.headline)
-            Text("Ajoutez votre première carte\nvia le bouton + en bas")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 80)
+    private func fmtCurrency(_ value: Double) -> String {
+        let f = NumberFormatter()
+        f.numberStyle = .currency
+        f.currencyCode = "CAD"
+        f.locale = Locale(identifier: "fr_CA")
+        f.maximumFractionDigits = 0
+        return f.string(from: NSNumber(value: value)) ?? "\(value)"
     }
 
     private func currentMonthName() -> String {
@@ -246,5 +321,12 @@ struct DashboardView: View {
         fmt.dateFormat = "MMMM"
         fmt.locale = Locale(identifier: "fr_CA")
         return fmt.string(from: .now).capitalized
+    }
+
+    private func currentDateString() -> String {
+        let fmt = DateFormatter()
+        fmt.dateFormat = "EEEE d MMMM"
+        fmt.locale = Locale(identifier: "fr_CA")
+        return fmt.string(from: .now)
     }
 }

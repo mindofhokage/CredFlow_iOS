@@ -28,7 +28,7 @@ struct SignUpView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Annuler") { dismiss() }
-                        .foregroundStyle(Color.adaptiveBg(colorScheme))
+                        .tint(Color.adaptiveBg(colorScheme))
                 }
             }
         }
@@ -130,7 +130,7 @@ struct SignUpView: View {
             Spacer()
             Image(systemName: "envelope.badge.checkmark.fill")
                 .font(.system(size: 72))
-                .foregroundStyle(.green)
+                .foregroundStyle(Color.adaptiveBg(colorScheme))
             Text("Vérifiez votre e-mail")
                 .font(.title2).fontWeight(.bold)
             Text("Un lien de confirmation a été envoyé à **\(vm.email)**.\nCliquez dessus puis revenez vous connecter.")

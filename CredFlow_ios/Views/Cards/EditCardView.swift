@@ -51,6 +51,18 @@ struct EditCardView: View {
             ZStack {
                 PremiumBackground()
 
+                if showDeleteConfirm {
+                    DeleteConfirmationOverlay(
+                        title: "Supprimer cette carte ?",
+                        message: "Toutes les dépenses associées seront supprimées.",
+                        isLoading: isLoading,
+                        onDelete: { Task { await deleteCard() } },
+                        onCancel: { showDeleteConfirm = false }
+                    )
+                    .zIndex(10)
+                    .transition(.opacity.combined(with: .scale(scale: 0.95)))
+                }
+
                 VStack(spacing: 0) {
                     ScrollView {
                         VStack(spacing: 28) {
@@ -119,7 +131,9 @@ struct EditCardView: View {
                                 formSection(title: "Réseau de paiement") {
                                     Picker("Réseau", selection: $network) {
                                         ForEach(CardNetwork.allCases, id: \.self) { n in
-                                            Text(n.displayName).tag(n)
+                                            Text(n.displayName)
+                                                .font(.system(size: 13, weight: .thin))
+                                                .tag(n)
                                         }
                                     }
                                     .pickerStyle(.segmented)
@@ -139,7 +153,7 @@ struct EditCardView: View {
                                 }
 
                                 // Delete button
-                                PremiumOutlineButton(title: "Supprimer la carte", isDestructive: true) {
+                                PremiumOutlineButton(title: "Supprimer la carte", isDestructive: false) {
                                     showDeleteConfirm = true
                                 }
                             }
@@ -164,17 +178,10 @@ struct EditCardView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Annuler") { dismiss() }
-                        .foregroundStyle(Color.adaptiveBg(colorScheme))
+                        .tint(Color.adaptiveBg(colorScheme))
                 }
             }
-            .confirmationDialog("Supprimer cette carte ?",
-                                isPresented: $showDeleteConfirm,
-                                titleVisibility: .visible) {
-                Button("Supprimer", role: .destructive) { Task { await deleteCard() } }
-                Button("Annuler", role: .cancel) {}
-            } message: {
-                Text("Toutes les dépenses associées seront supprimées.")
-            }
+            .animation(.spring(response: 0.3, dampingFraction: 0.85), value: showDeleteConfirm)
         }
     }
 

@@ -231,6 +231,7 @@ struct DeleteConfirmationOverlay: View {
                                     .stroke(Color.secondary.opacity(0.25), lineWidth: 1.5)
                             )
                     }
+                    .buttonStyle(.plain)
                     .disabled(isLoading)
                 }
             }

@@ -10,40 +10,10 @@ struct LoginView: View {
 
     enum Field { case email, password }
 
-    private var buttonFg: Color { colorScheme == .dark ? .black : .white }
-    private var buttonBg: Color { colorScheme == .dark ? .white : .black }
-
     var body: some View {
         NavigationStack {
             ZStack {
-                // Subtle background gradient
-                LinearGradient(
-                    colors: colorScheme == .dark
-                        ? [Color(white: 0.08), Color(white: 0.04)]
-                        : [Color(white: 0.97), Color.white],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .ignoresSafeArea()
-
-                // Decorative blurred circles
-                GeometryReader { geo in
-                    Circle()
-                        .fill(colorScheme == .dark
-                              ? Color.white.opacity(0.04)
-                              : Color.black.opacity(0.04))
-                        .frame(width: 300)
-                        .offset(x: geo.size.width * 0.5, y: -60)
-                        .blur(radius: 40)
-                    Circle()
-                        .fill(colorScheme == .dark
-                              ? Color.white.opacity(0.03)
-                              : Color.black.opacity(0.03))
-                        .frame(width: 250)
-                        .offset(x: -60, y: geo.size.height * 0.6)
-                        .blur(radius: 40)
-                }
-                .allowsHitTesting(false)
+                PremiumBackground()
 
                 VStack(spacing: 0) {
                     ScrollView {
@@ -71,11 +41,7 @@ struct LoginView: View {
                             // Form card
                             VStack(spacing: 14) {
                                 // Email
-                                HStack(spacing: 12) {
-                                    Image(systemName: "envelope")
-                                        .font(.system(size: 16))
-                                        .foregroundStyle(.secondary)
-                                        .frame(width: 20)
+                                PremiumField(icon: "envelope", isFocused: focusedField == .email) {
                                     TextField("Adresse e-mail", text: $vm.email)
                                         .textFieldStyle(.plain)
                                         .keyboardType(.emailAddress)
@@ -85,29 +51,9 @@ struct LoginView: View {
                                         .submitLabel(.next)
                                         .onSubmit { focusedField = .password }
                                 }
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 16)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 14)
-                                        .fill(colorScheme == .dark
-                                              ? Color(white: 0.14)
-                                              : Color.white)
-                                        .shadow(color: .black.opacity(colorScheme == .dark ? 0 : 0.06),
-                                                radius: 8, x: 0, y: 2)
-                                )
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 14)
-                                        .stroke(focusedField == .email
-                                                ? buttonBg.opacity(0.4)
-                                                : Color.clear, lineWidth: 1.5)
-                                )
 
                                 // Password
-                                HStack(spacing: 12) {
-                                    Image(systemName: "lock")
-                                        .font(.system(size: 16))
-                                        .foregroundStyle(.secondary)
-                                        .frame(width: 20)
+                                PremiumField(icon: "lock", isFocused: focusedField == .password) {
                                     SecureField("Mot de passe", text: $vm.password)
                                         .textFieldStyle(.plain)
                                         .focused($focusedField, equals: .password)
@@ -116,22 +62,6 @@ struct LoginView: View {
                                             Task { await vm.login(authService: authService) }
                                         }
                                 }
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 16)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 14)
-                                        .fill(colorScheme == .dark
-                                              ? Color(white: 0.14)
-                                              : Color.white)
-                                        .shadow(color: .black.opacity(colorScheme == .dark ? 0 : 0.06),
-                                                radius: 8, x: 0, y: 2)
-                                )
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 14)
-                                        .stroke(focusedField == .password
-                                                ? buttonBg.opacity(0.4)
-                                                : Color.clear, lineWidth: 1.5)
-                                )
 
                                 // Error
                                 if let err = vm.errorMessage {
@@ -151,25 +81,9 @@ struct LoginView: View {
                             Spacer().frame(height: 24)
 
                             // Se connecter
-                            Button {
+                            PremiumButton(title: "Se connecter", isLoading: vm.isLoading) {
                                 Task { await vm.login(authService: authService) }
-                            } label: {
-                                ZStack {
-                                    if vm.isLoading {
-                                        ProgressView().tint(buttonFg)
-                                    } else {
-                                        Text("Se connecter")
-                                            .font(.system(size: 16, weight: .semibold))
-                                            .foregroundStyle(buttonFg)
-                                    }
-                                }
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 54)
-                                .background(buttonBg)
-                                .clipShape(RoundedRectangle(cornerRadius: 16))
-                                .shadow(color: buttonBg.opacity(0.3), radius: 12, x: 0, y: 6)
                             }
-                            .disabled(vm.isLoading)
                             .padding(.horizontal, 24)
 
                             Spacer().frame(height: 32)
@@ -187,18 +101,8 @@ struct LoginView: View {
                             Spacer().frame(height: 24)
 
                             // Créer un compte
-                            Button {
+                            PremiumOutlineButton(title: "Créer un compte") {
                                 showSignUp = true
-                            } label: {
-                                Text("Créer un compte")
-                                    .font(.system(size: 16, weight: .medium))
-                                    .foregroundStyle(buttonBg)
-                                    .frame(maxWidth: .infinity)
-                                    .frame(height: 54)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 16)
-                                            .stroke(buttonBg.opacity(0.3), lineWidth: 1.5)
-                                    )
                             }
                             .padding(.horizontal, 24)
 
