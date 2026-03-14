@@ -7,6 +7,7 @@ struct DashboardView: View {
     @State private var vm = DashboardViewModel()
     @State private var path = NavigationPath()
     @State private var isStackExpanded = false
+    @State private var showProfile = false
 
     private let cardH: CGFloat = 216
     private let peekH: CGFloat = 62
@@ -110,13 +111,7 @@ struct DashboardView: View {
                     }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Menu {
-                        Button(role: .destructive) {
-                            Task { try? await authService.signOut() }
-                        } label: {
-                            Label("Se déconnecter", systemImage: "rectangle.portrait.and.arrow.right")
-                        }
-                    } label: {
+                    Button { showProfile = true } label: {
                         Image(systemName: "person.circle")
                             .font(.title3)
                             .foregroundStyle(Color.adaptiveBg(colorScheme))
@@ -126,6 +121,9 @@ struct DashboardView: View {
             .sheet(isPresented: $vm.showAddCard) {
                 AddCardView { newCard in vm.cards.insert(newCard, at: 0) }
                     .environment(authService)
+            }
+            .sheet(isPresented: $showProfile) {
+                ProfileView().environment(authService)
             }
         }
         .task { await vm.loadCards() }

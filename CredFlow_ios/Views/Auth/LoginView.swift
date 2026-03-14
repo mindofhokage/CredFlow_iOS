@@ -1,49 +1,120 @@
 
 import SwiftUI
+import LocalAuthentication
 
 struct LoginView: View {
     @Environment(AuthService.self) private var authService
     @Environment(\.colorScheme) private var colorScheme
-    @State private var vm = AuthViewModel()
-    @State private var showSignUp = false
+    @State private var vm           = AuthViewModel()
+    @State private var showSignUp   = false
+    @State private var isBioLoading = false
     @FocusState private var focusedField: Field?
 
     enum Field { case email, password }
 
+    private var canUseBiometrics: Bool {
+        BiometricService.shared.isAvailable && KeychainService.shared.hasCredentials
+    }
+    private var biometricLabel: String {
+        BiometricService.shared.biometricType == .faceID ? "Continuer avec Face ID" : "Continuer avec Touch ID"
+    }
+    private var biometricIcon: String {
+        BiometricService.shared.biometricType == .faceID ? "faceid" : "touchid"
+    }
+    private var cardBg: Color {
+        colorScheme == .dark ? Color(white: 0.13) : Color.white
+    }
+
     var body: some View {
-        NavigationStack {
-            ZStack {
-                PremiumBackground()
+        ZStack {
+            PremiumBackground()
 
-                VStack(spacing: 0) {
-                    ScrollView {
-                        VStack(spacing: 0) {
-                            Spacer().frame(height: 70)
+            VStack(spacing: 0) {
+                ScrollView {
+                    VStack(spacing: 0) {
 
-                            // Logo
-                            VStack(spacing: 6) {
-                                HStack(spacing: 0) {
-                                    Text("Cred")
-                                        .font(.system(size: 52, weight: .thin))
-                                    Text("Flow")
-                                        .font(.system(size: 52, weight: .black))
-                                }
-                                .tracking(-1)
-
-                                Text("Votre gestionnaire de crédit")
-                                    .font(.system(size: 14, weight: .regular))
-                                    .foregroundStyle(.secondary)
-                                    .tracking(0.3)
+                        // ── Logo ─────────────────────────────────────────
+                        VStack(spacing: 6) {
+                            HStack(spacing: 0) {
+                                Text("Cred").font(.system(size: 48, weight: .thin))
+                                Text("Flow").font(.system(size: 48, weight: .black))
                             }
+                            .tracking(-0.5)
+                            Text("Votre gestionnaire de crédit")
+                                .font(.system(size: 13, weight: .regular))
+                                .foregroundStyle(.tertiary)
+                                .tracking(0.4)
+                        }
+                        .padding(.top, 72)
 
-                            Spacer().frame(height: 60)
+                        // ── Face ID ───────────────────────────────────────
+                        if canUseBiometrics {
+                            VStack(spacing: 20) {
+                                ZStack {
+                                    Circle()
+                                        .fill(cardBg)
+                                        .frame(width: 80, height: 80)
+                                        .shadow(color: .black.opacity(colorScheme == .dark ? 0 : 0.07),
+                                                radius: 14, y: 4)
+                                    Image(systemName: biometricIcon)
+                                        .font(.system(size: 32, weight: .ultraLight))
+                                        .foregroundStyle(.primary)
+                                }
 
-                            // Form card
-                            VStack(spacing: 14) {
-                                // Email
-                                PremiumField(icon: "envelope", isFocused: focusedField == .email) {
+                                VStack(spacing: 4) {
+                                    Text("Accès rapide")
+                                        .font(.system(size: 16, weight: .semibold))
+                                    Text("Utilisez \(BiometricService.shared.biometricType == .faceID ? "Face ID" : "Touch ID") pour vous connecter instantanément")
+                                        .font(.system(size: 13))
+                                        .foregroundStyle(.secondary)
+                                        .multilineTextAlignment(.center)
+                                }
+
+                                PremiumButton(title: biometricLabel, isLoading: isBioLoading) {
+                                    Task { await biometricLogin() }
+                                }
+                            }
+                            .padding(.horizontal, 24)
+                            .padding(.vertical, 28)
+                            .background(
+                                RoundedRectangle(cornerRadius: 20)
+                                    .fill(cardBg)
+                                    .shadow(color: .black.opacity(colorScheme == .dark ? 0 : 0.06),
+                                            radius: 12, y: 3)
+                            )
+                            .padding(.horizontal, 24)
+                            .padding(.top, 44)
+
+                            // Divider
+                            HStack(spacing: 14) {
+                                Rectangle().fill(Color.secondary.opacity(0.18)).frame(height: 1)
+                                Text("ou")
+                                    .font(.system(size: 12, weight: .medium))
+                                    .foregroundStyle(.tertiary)
+                                    .tracking(0.5)
+                                Rectangle().fill(Color.secondary.opacity(0.18)).frame(height: 1)
+                            }
+                            .padding(.horizontal, 36)
+                            .padding(.top, 28)
+                            .padding(.bottom, 20)
+
+                        } else {
+                            Spacer().frame(height: 52)
+                        }
+
+                        // ── Form ─────────────────────────────────────────
+                        VStack(alignment: .leading, spacing: 10) {
+                            PremiumSectionLabel(title: "Connexion")
+                                .padding(.horizontal, 4)
+
+                            VStack(spacing: 1) {
+                                // Email field
+                                HStack(spacing: 12) {
+                                    Image(systemName: "envelope")
+                                        .font(.system(size: 15))
+                                        .foregroundStyle(.secondary)
+                                        .frame(width: 20)
                                     TextField("Adresse e-mail", text: $vm.email)
-                                        .textFieldStyle(.plain)
                                         .keyboardType(.emailAddress)
                                         .textInputAutocapitalization(.never)
                                         .autocorrectionDisabled()
@@ -51,77 +122,95 @@ struct LoginView: View {
                                         .submitLabel(.next)
                                         .onSubmit { focusedField = .password }
                                 }
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 16)
+                                .background(cardBg)
 
-                                // Password
-                                PremiumField(icon: "lock", isFocused: focusedField == .password) {
+                                Divider().padding(.leading, 52)
+
+                                // Password field
+                                HStack(spacing: 12) {
+                                    Image(systemName: "lock")
+                                        .font(.system(size: 15))
+                                        .foregroundStyle(.secondary)
+                                        .frame(width: 20)
                                     SecureField("Mot de passe", text: $vm.password)
-                                        .textFieldStyle(.plain)
                                         .focused($focusedField, equals: .password)
                                         .submitLabel(.go)
-                                        .onSubmit {
-                                            Task { await vm.login(authService: authService) }
-                                        }
+                                        .onSubmit { Task { await vm.login(authService: authService) } }
                                 }
-
-                                // Error
-                                if let err = vm.errorMessage {
-                                    HStack(spacing: 6) {
-                                        Image(systemName: "exclamationmark.circle.fill")
-                                            .font(.caption)
-                                        Text(err)
-                                            .font(.caption)
-                                    }
-                                    .foregroundStyle(.red)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    .padding(.horizontal, 4)
-                                }
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 16)
+                                .background(cardBg)
                             }
-                            .padding(.horizontal, 24)
-
-                            Spacer().frame(height: 24)
-
-                            // Se connecter
-                            PremiumButton(title: "Se connecter", isLoading: vm.isLoading) {
-                                Task { await vm.login(authService: authService) }
-                            }
-                            .padding(.horizontal, 24)
-
-                            Spacer().frame(height: 32)
-
-                            // Divider with text
-                            HStack(spacing: 12) {
-                                Rectangle().fill(Color.secondary.opacity(0.2)).frame(height: 1)
-                                Text("ou")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                Rectangle().fill(Color.secondary.opacity(0.2)).frame(height: 1)
-                            }
-                            .padding(.horizontal, 24)
-
-                            Spacer().frame(height: 24)
-
-                            // Créer un compte
-                            PremiumOutlineButton(title: "Créer un compte") {
-                                showSignUp = true
-                            }
-                            .padding(.horizontal, 24)
-
-                            Spacer().frame(height: 40)
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .strokeBorder(
+                                        focusedField != nil
+                                            ? Color.adaptiveBg(colorScheme).opacity(0.25)
+                                            : Color.clear,
+                                        lineWidth: 1.5
+                                    )
+                            )
+                            .shadow(color: .black.opacity(colorScheme == .dark ? 0 : 0.06),
+                                    radius: 10, y: 2)
                         }
-                    }
-                    .scrollDismissesKeyboard(.interactively)
+                        .padding(.horizontal, 24)
 
-                    // Version
-                    Text("CredFlow v\(appVersion)")
-                        .font(.system(size: 11, weight: .regular))
-                        .foregroundStyle(.tertiary)
-                        .padding(.bottom, 12)
+                        // Error
+                        if let err = vm.errorMessage {
+                            HStack(spacing: 6) {
+                                Image(systemName: "exclamationmark.circle.fill").font(.caption)
+                                Text(err).font(.caption)
+                            }
+                            .foregroundStyle(.red)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 28)
+                            .padding(.top, 10)
+                        }
+
+                        // Se connecter
+                        PremiumButton(title: "Se connecter", isLoading: vm.isLoading) {
+                            Task { await vm.login(authService: authService) }
+                        }
+                        .padding(.horizontal, 24)
+                        .padding(.top, 20)
+
+                        // Créer un compte
+                        PremiumOutlineButton(title: "Créer un compte") { showSignUp = true }
+                            .padding(.horizontal, 24)
+                            .padding(.top, 12)
+
+                        Spacer().frame(height: 48)
+                    }
                 }
+                .scrollDismissesKeyboard(.interactively)
+
+                // Version
+                Text("CredFlow v\(appVersion)")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.tertiary)
+                    .padding(.bottom, 14)
             }
         }
         .sheet(isPresented: $showSignUp) {
             SignUpView().environment(authService)
         }
+        .task {
+            if canUseBiometrics { await biometricLogin() }
+        }
+    }
+
+    // MARK: - Biometric login
+
+    private func biometricLogin() async {
+        guard !isBioLoading else { return }
+        isBioLoading = true
+        defer { isBioLoading = false }
+        let ok = await BiometricService.shared.authenticate(reason: "Accédez à CredFlow")
+        guard ok, let creds = KeychainService.shared.load() else { return }
+        try? await authService.signIn(email: creds.email, password: creds.password)
     }
 
     private var appVersion: String {
