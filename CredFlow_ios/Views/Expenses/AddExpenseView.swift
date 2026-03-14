@@ -8,166 +8,244 @@ struct AddExpenseView: View {
     @Environment(\.colorScheme) private var colorScheme
 
     let card: Card
-    var onExpenseAdded: () -> Void
+    var onSaved: () -> Void
 
-    @State private var vm = AddExpenseViewModel()
+    @State private var vm: AddExpenseViewModel
     @FocusState private var focusedField: Field?
 
     enum Field { case amount, merchant, note }
+
+    init(card: Card, expense: Expense? = nil, onSaved: @escaping () -> Void) {
+        self.card = card
+        self.onSaved = onSaved
+        _vm = State(initialValue: AddExpenseViewModel(expense: expense))
+    }
+
+    private var cardBg: Color {
+        colorScheme == .dark ? Color(white: 0.13) : Color.white
+    }
 
     var body: some View {
         NavigationStack {
             ZStack {
                 PremiumBackground()
 
+                // Delete confirmation overlay
+                if vm.showDeleteConfirm {
+                    DeleteConfirmationOverlay(
+                        title: "Supprimer la dépense ?",
+                        message: "Cette action est irréversible.",
+                        isLoading: vm.isLoading,
+                        onDelete: { Task { await deleteExpense() } },
+                        onCancel: { vm.showDeleteConfirm = false }
+                    )
+                    .zIndex(10)
+                    .transition(.opacity.combined(with: .scale(scale: 0.95)))
+                }
+
                 VStack(spacing: 0) {
                     ScrollView {
-                        VStack(spacing: 28) {
-                            Spacer().frame(height: 8)
+                        VStack(spacing: 24) {
+                            Spacer().frame(height: 4)
 
-                            // Amount hero input
-                            VStack(spacing: 6) {
-                                Text("Montant")
-                                    .font(.system(size: 12, weight: .semibold))
-                                    .foregroundStyle(.secondary)
-                                    .textCase(.uppercase)
-                                    .tracking(0.5)
-
-                                HStack(alignment: .lastTextBaseline, spacing: 4) {
+                            // ── Amount ──────────────────────────────────
+                            VStack(spacing: 4) {
+                                HStack(alignment: .lastTextBaseline, spacing: 2) {
                                     Text("$")
-                                        .font(.system(size: 36, weight: .thin))
+                                        .font(.system(size: 32, weight: .light))
                                         .foregroundStyle(.secondary)
                                     TextField("0,00", text: $vm.amountText)
-                                        .font(.system(size: 56, weight: .black))
+                                        .font(.system(size: 64, weight: .bold))
                                         .keyboardType(.decimalPad)
                                         .multilineTextAlignment(.center)
                                         .focused($focusedField, equals: .amount)
-                                        .frame(maxWidth: 220)
+                                        .frame(maxWidth: 240)
                                 }
+                                .frame(maxWidth: .infinity)
 
-                                // Card indicator
-                                HStack(spacing: 6) {
-                                    Image(systemName: "creditcard.fill")
+                                HStack(spacing: 5) {
+                                    Image(systemName: "creditcard")
                                         .font(.system(size: 11))
-                                        .foregroundStyle(.secondary)
-                                    Text(card.name)
+                                        .foregroundStyle(.tertiary)
+                                    Text("\(card.name)  ···· \(card.lastFour)")
                                         .font(.system(size: 12))
-                                        .foregroundStyle(.secondary)
-                                    Text("•••• \(card.lastFour)")
-                                        .font(.system(size: 12, weight: .medium))
-                                        .foregroundStyle(.secondary)
+                                        .foregroundStyle(.tertiary)
                                 }
                             }
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 24)
+                            .padding(.top, 12)
+                            .padding(.bottom, 8)
+
+                            // ── Merchant + Note ─────────────────────────
+                            VStack(spacing: 0) {
+                                HStack(spacing: 12) {
+                                    Image(systemName: "storefront")
+                                        .font(.system(size: 15))
+                                        .foregroundStyle(.secondary)
+                                        .frame(width: 20)
+                                    TextField("Marchand", text: $vm.merchant)
+                                        .focused($focusedField, equals: .merchant)
+                                        .submitLabel(.next)
+                                        .onSubmit { focusedField = .note }
+                                }
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 16)
+
+                                Divider().padding(.leading, 48)
+
+                                HStack(spacing: 12) {
+                                    Image(systemName: "note.text")
+                                        .font(.system(size: 15))
+                                        .foregroundStyle(.secondary)
+                                        .frame(width: 20)
+                                    TextField("Note (optionnel)", text: $vm.note)
+                                        .focused($focusedField, equals: .note)
+                                        .submitLabel(.done)
+                                }
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 16)
+                            }
                             .background(
-                                RoundedRectangle(cornerRadius: 20)
-                                    .fill(colorScheme == .dark ? Color(white: 0.13) : Color.white)
-                                    .shadow(color: .black.opacity(0.06), radius: 12, y: 3)
+                                RoundedRectangle(cornerRadius: 16)
+                                    .fill(cardBg)
+                                    .shadow(color: .black.opacity(colorScheme == .dark ? 0 : 0.05), radius: 10, y: 2)
                             )
                             .padding(.horizontal, 20)
 
-                            VStack(spacing: 20) {
-                                // Merchant
-                                formSection(title: "Marchand") {
-                                    PremiumField(icon: "storefront", isFocused: focusedField == .merchant) {
-                                        TextField("Ex: Carrefour, Netflix...", text: $vm.merchant)
-                                            .focused($focusedField, equals: .merchant)
-                                            .submitLabel(.next)
-                                            .onSubmit { focusedField = .note }
-                                    }
-                                }
+                            // ── Category ────────────────────────────────
+                            VStack(alignment: .leading, spacing: 12) {
+                                PremiumSectionLabel(title: "Catégorie")
+                                    .padding(.horizontal, 20)
 
-                                // Category
-                                formSection(title: "Catégorie") {
-                                    LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 5), spacing: 12) {
+                                ScrollView(.horizontal, showsIndicators: false) {
+                                    HStack(spacing: 8) {
                                         ForEach(ExpenseCategory.allCases) { cat in
                                             Button {
                                                 vm.selectedCategory = cat
                                             } label: {
-                                                VStack(spacing: 5) {
-                                                    ZStack {
-                                                        Circle()
-                                                            .fill(vm.selectedCategory == cat
-                                                                  ? cat.color
-                                                                  : cat.color.opacity(0.12))
-                                                            .frame(width: 46, height: 46)
-                                                        Image(systemName: cat.icon)
-                                                            .foregroundStyle(vm.selectedCategory == cat ? .white : cat.color)
-                                                            .font(.system(size: 18))
-                                                    }
-                                                    .shadow(color: vm.selectedCategory == cat ? cat.color.opacity(0.4) : .clear,
-                                                            radius: 6, y: 3)
+                                                HStack(spacing: 6) {
+                                                    Image(systemName: cat.icon)
+                                                        .font(.system(size: 12))
                                                     Text(cat.displayName)
-                                                        .font(.system(size: 9, weight: .medium))
-                                                        .foregroundStyle(vm.selectedCategory == cat ? .primary : .secondary)
-                                                        .lineLimit(1)
+                                                        .font(.system(size: 13, weight: .medium))
                                                 }
+                                                .padding(.horizontal, 14)
+                                                .padding(.vertical, 9)
+                                                .background(
+                                                    vm.selectedCategory == cat
+                                                        ? Color.adaptiveBg(colorScheme)
+                                                        : cardBg
+                                                )
+                                                .foregroundStyle(
+                                                    vm.selectedCategory == cat
+                                                        ? Color.adaptiveFg(colorScheme)
+                                                        : Color.secondary
+                                                )
+                                                .clipShape(Capsule())
+                                                .shadow(
+                                                    color: .black.opacity(vm.selectedCategory == cat ? 0.12 : 0.04),
+                                                    radius: vm.selectedCategory == cat ? 6 : 4, y: 2
+                                                )
                                             }
                                             .buttonStyle(.plain)
                                         }
                                     }
-                                    .padding(14)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 16)
-                                            .fill(colorScheme == .dark ? Color(white: 0.13) : Color.white)
-                                            .shadow(color: .black.opacity(0.05), radius: 8, y: 2)
-                                    )
+                                    .padding(.horizontal, 20)
+                                    .padding(.vertical, 4)
                                 }
+                            }
 
-                                // Date
-                                formSection(title: "Date") {
-                                    HStack {
-                                        Image(systemName: "calendar")
-                                            .font(.system(size: 16))
-                                            .foregroundStyle(.secondary)
-                                            .frame(width: 20)
-                                        DatePicker("", selection: $vm.date, displayedComponents: .date)
-                                            .labelsHidden()
+                            // ── Date ────────────────────────────────────
+                            HStack(spacing: 12) {
+                                Image(systemName: "calendar")
+                                    .font(.system(size: 15))
+                                    .foregroundStyle(.secondary)
+                                    .frame(width: 20)
+                                Text("Date")
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                                Spacer()
+                                DatePicker("", selection: $vm.date, displayedComponents: .date)
+                                    .labelsHidden()
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 14)
+                            .background(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .fill(cardBg)
+                                    .shadow(color: .black.opacity(colorScheme == .dark ? 0 : 0.05), radius: 10, y: 2)
+                            )
+                            .padding(.horizontal, 20)
+
+                            // ── Paid toggle (edit only) ──────────────────
+                            if vm.isEditing {
+                                Button {
+                                    vm.isPaid.toggle()
+                                } label: {
+                                    HStack(spacing: 12) {
+                                        Image(systemName: vm.isPaid ? "checkmark.circle.fill" : "circle")
+                                            .font(.system(size: 20))
+                                            .foregroundStyle(vm.isPaid ? Color.adaptiveFg(colorScheme) : .secondary)
+                                        Text("Paiement effectué")
+                                            .font(.subheadline)
+                                            .foregroundStyle(vm.isPaid ? Color.adaptiveFg(colorScheme) : .primary)
+                                        Spacer()
                                     }
                                     .padding(.horizontal, 16)
                                     .padding(.vertical, 14)
                                     .background(
-                                        RoundedRectangle(cornerRadius: 14)
-                                            .fill(colorScheme == .dark ? Color(white: 0.14) : Color.white)
-                                            .shadow(color: .black.opacity(colorScheme == .dark ? 0 : 0.06), radius: 8, y: 2)
+                                        RoundedRectangle(cornerRadius: 16)
+                                            .fill(vm.isPaid
+                                                  ? Color.adaptiveBg(colorScheme)
+                                                  : cardBg)
+                                            .shadow(color: .black.opacity(colorScheme == .dark ? 0 : 0.05), radius: 10, y: 2)
                                     )
                                 }
-
-                                // Note
-                                formSection(title: "Note (optionnel)") {
-                                    PremiumField(icon: "note.text", isFocused: focusedField == .note) {
-                                        TextField("Commentaire...", text: $vm.note)
-                                            .focused($focusedField, equals: .note)
-                                    }
-                                }
-
-                                if let err = vm.errorMessage {
-                                    HStack(spacing: 6) {
-                                        Image(systemName: "exclamationmark.circle.fill").font(.caption)
-                                        Text(err).font(.caption)
-                                    }
-                                    .foregroundStyle(.red)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                }
+                                .buttonStyle(.plain)
+                                .padding(.horizontal, 20)
                             }
-                            .padding(.horizontal, 20)
+
+                            // ── Error ────────────────────────────────────
+                            if let err = vm.errorMessage {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "exclamationmark.circle.fill").font(.caption)
+                                    Text(err).font(.caption)
+                                }
+                                .foregroundStyle(.red)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.horizontal, 24)
+                            }
+
+                            // ── Delete (edit only) ────────────────────────
+                            if vm.isEditing {
+                                Button {
+                                    vm.showDeleteConfirm = true
+                                } label: {
+                                    Text("Supprimer la dépense")
+                                        .font(.system(size: 14))
+                                        .foregroundStyle(.secondary)
+                                }
+                                .padding(.top, 4)
+                            }
                         }
-                        .padding(.bottom, 24)
+                        .padding(.bottom, 32)
                     }
                     .scrollDismissesKeyboard(.interactively)
 
+                    // ── Bottom button ─────────────────────────────────
                     VStack(spacing: 0) {
                         Divider()
-                        PremiumButton(title: "Ajouter la dépense", isLoading: vm.isLoading) {
-                            Task { await addExpense() }
+                        PremiumButton(
+                            title: vm.isEditing ? "Enregistrer" : "Ajouter la dépense",
+                            isLoading: vm.isLoading
+                        ) {
+                            Task { await saveExpense() }
                         }
                         .padding(20)
                     }
                     .background(colorScheme == .dark ? Color(white: 0.08) : Color.white)
                 }
             }
-            .navigationTitle("Nouvelle dépense")
+            .navigationTitle(vm.isEditing ? "Modifier" : "Nouvelle dépense")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -175,18 +253,11 @@ struct AddExpenseView: View {
                         .foregroundStyle(Color.adaptiveBg(colorScheme))
                 }
             }
+            .animation(.spring(response: 0.3, dampingFraction: 0.85), value: vm.showDeleteConfirm)
         }
     }
 
-    @ViewBuilder
-    private func formSection(title: String, @ViewBuilder content: () -> some View) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            PremiumSectionLabel(title: title)
-            content()
-        }
-    }
-
-    private func addExpense() async {
+    private func saveExpense() async {
         guard let userId = authService.currentUser?.id.uuidString else {
             vm.errorMessage = "Non authentifié."
             return
@@ -194,8 +265,20 @@ struct AddExpenseView: View {
         vm.isLoading = true; vm.errorMessage = nil
         defer { vm.isLoading = false }
         do {
-            try await vm.addExpense(cardId: card.id, userId: userId)
-            onExpenseAdded()
+            try await vm.save(cardId: card.id, userId: userId)
+            onSaved()
+            dismiss()
+        } catch {
+            vm.errorMessage = error.localizedDescription
+        }
+    }
+
+    private func deleteExpense() async {
+        vm.isLoading = true
+        defer { vm.isLoading = false }
+        do {
+            try await vm.deleteExpense()
+            onSaved()
             dismiss()
         } catch {
             vm.errorMessage = error.localizedDescription

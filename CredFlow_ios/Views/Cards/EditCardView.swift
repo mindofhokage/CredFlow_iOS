@@ -15,6 +15,7 @@ struct EditCardView: View {
     @State private var creditLimitText: String
     @State private var billingStartDay: Int
     @State private var network: CardNetwork
+    @State private var colorIndex: Int
     @State private var isLoading = false
     @State private var errorMessage: String?
     @State private var showDeleteConfirm = false
@@ -32,6 +33,7 @@ struct EditCardView: View {
         _creditLimitText = State(initialValue: String(card.creditLimit))
         _billingStartDay = State(initialValue: card.billingStartDay)
         _network = State(initialValue: card.network)
+        _colorIndex = State(initialValue: card.colorIndex)
     }
 
     private var previewCard: Card {
@@ -40,7 +42,8 @@ struct EditCardView: View {
              provider: provider.isEmpty ? card.provider : provider,
              lastFour: lastFour.isEmpty ? card.lastFour : String(lastFour.prefix(4)),
              creditLimit: Double(creditLimitText) ?? card.creditLimit,
-             billingStartDay: billingStartDay, network: network, createdAt: card.createdAt)
+             billingStartDay: billingStartDay, network: network,
+             colorIndex: colorIndex, createdAt: card.createdAt)
     }
 
     var body: some View {
@@ -122,6 +125,10 @@ struct EditCardView: View {
                                     .pickerStyle(.segmented)
                                 }
 
+                                formSection(title: "Couleur de la carte") {
+                                    colorPicker
+                                }
+
                                 if let err = errorMessage {
                                     HStack(spacing: 6) {
                                         Image(systemName: "exclamationmark.circle.fill").font(.caption)
@@ -172,6 +179,37 @@ struct EditCardView: View {
     }
 
     @ViewBuilder
+    private var colorPicker: some View {
+        HStack(spacing: 12) {
+            ForEach(0..<CardProvider.colorVariants.count, id: \.self) { i in
+                let variant = CardProvider.colorVariants[i]
+                Button {
+                    colorIndex = i
+                } label: {
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(LinearGradient(
+                            colors: [variant.top, variant.bottom],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ))
+                        .frame(height: 44)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(colorIndex == i ? Color.adaptiveBg(colorScheme) : Color.clear, lineWidth: 2.5)
+                        )
+                        .overlay(
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundStyle(.white)
+                                .opacity(colorIndex == i ? 1 : 0)
+                        )
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    @ViewBuilder
     private func formSection(title: String, @ViewBuilder content: () -> some View) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             PremiumSectionLabel(title: title)
@@ -188,7 +226,8 @@ struct EditCardView: View {
         isLoading = true; errorMessage = nil; defer { isLoading = false }
         var updated = card
         updated.name = name; updated.provider = provider; updated.lastFour = lastFour
-        updated.creditLimit = limit; updated.billingStartDay = billingStartDay; updated.network = network
+        updated.creditLimit = limit; updated.billingStartDay = billingStartDay
+        updated.network = network; updated.colorIndex = colorIndex
         do {
             try await CardService.updateCard(updated)
             onUpdated(updated); dismiss()

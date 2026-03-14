@@ -16,6 +16,7 @@ struct AddCardView: View {
     @State private var creditLimitText = ""
     @State private var billingStartDay = 1
     @State private var network: CardNetwork = .visa
+    @State private var colorIndex: Int = 0
     @State private var isLoading = false
     @State private var errorMessage: String?
     @State private var showProviderSuggestions = false
@@ -39,6 +40,7 @@ struct AddCardView: View {
             creditLimit: Double(creditLimitText) ?? 0,
             billingStartDay: billingStartDay,
             network: network,
+            colorIndex: colorIndex,
             createdAt: .now
         )
     }
@@ -162,6 +164,11 @@ struct AddCardView: View {
                                     .pickerStyle(.segmented)
                                 }
 
+                                // Section: Couleur
+                                formSection(title: "Couleur de la carte") {
+                                    colorPicker
+                                }
+
                                 if let err = errorMessage {
                                     HStack(spacing: 6) {
                                         Image(systemName: "exclamationmark.circle.fill").font(.caption)
@@ -202,6 +209,37 @@ struct AddCardView: View {
     }
 
     @ViewBuilder
+    private var colorPicker: some View {
+        HStack(spacing: 12) {
+            ForEach(0..<CardProvider.colorVariants.count, id: \.self) { i in
+                let variant = CardProvider.colorVariants[i]
+                Button {
+                    colorIndex = i
+                } label: {
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(LinearGradient(
+                            colors: [variant.top, variant.bottom],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ))
+                        .frame(height: 44)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(colorIndex == i ? Color.adaptiveBg(colorScheme) : Color.clear, lineWidth: 2.5)
+                        )
+                        .overlay(
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundStyle(.white)
+                                .opacity(colorIndex == i ? 1 : 0)
+                        )
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    @ViewBuilder
     private func formSection(title: String, @ViewBuilder content: () -> some View) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             PremiumSectionLabel(title: title)
@@ -224,7 +262,8 @@ struct AddCardView: View {
         do {
             let input = CardInput(userId: userId, name: name, provider: provider,
                                   lastFour: lastFour, creditLimit: limit,
-                                  billingStartDay: billingStartDay, network: network.rawValue)
+                                  billingStartDay: billingStartDay, network: network.rawValue,
+                                  colorIndex: colorIndex)
             let card = try await CardService.addCard(input)
             onCardAdded(card)
             dismiss()

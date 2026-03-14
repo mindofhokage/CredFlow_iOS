@@ -19,14 +19,17 @@ struct ExpenseRow: View {
     var body: some View {
         HStack(spacing: 12) {
             CategoryBadge(category: category)
+                .opacity(expense.isPaid ? 0.35 : 1)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(expense.merchant)
                     .font(.subheadline)
                     .fontWeight(.medium)
+                    .strikethrough(expense.isPaid)
+                    .foregroundStyle(expense.isPaid ? .secondary : .primary)
                 Text(category.displayName)
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.tertiary)
                 if let note = expense.note, !note.isEmpty {
                     Text(note)
                         .font(.caption2)
@@ -37,10 +40,19 @@ struct ExpenseRow: View {
 
             Spacer()
 
-            Text(formattedAmount)
-                .font(.subheadline)
-                .fontWeight(.semibold)
+            HStack(spacing: 5) {
+                if expense.isPaid {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.secondary)
+                }
+                Text(formattedAmount)
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .strikethrough(expense.isPaid)
+                    .foregroundStyle(expense.isPaid ? .secondary : .primary)
+            }
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, 2)
     }
 }

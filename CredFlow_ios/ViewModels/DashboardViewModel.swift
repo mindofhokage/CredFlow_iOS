@@ -20,6 +20,12 @@ class DashboardViewModel {
         }
     }
 
+    func updateCard(_ card: Card) {
+        if let idx = cards.firstIndex(where: { $0.id == card.id }) {
+            cards[idx] = card
+        }
+    }
+
     func deleteCard(_ card: Card) async {
         do {
             try await CardService.deleteCard(id: card.id)

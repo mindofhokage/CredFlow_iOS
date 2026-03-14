@@ -2,128 +2,145 @@
 import SwiftUI
 
 enum CardProvider {
-    static func gradient(for provider: String) -> LinearGradient {
-        let p = provider.lowercased()
-        let colors: [Color]
-        if p.contains("chase") {
-            colors = [Color(red: 0.07, green: 0.36, blue: 0.73), Color(red: 0.02, green: 0.14, blue: 0.41)]
-        } else if p.contains("amex") || p.contains("american express") {
-            colors = [Color(red: 0.1, green: 0.55, blue: 0.35), Color(red: 0.02, green: 0.28, blue: 0.15)]
-        } else if p.contains("capital") {
-            colors = [Color(red: 0.75, green: 0.1, blue: 0.1), Color(red: 0.4, green: 0.02, blue: 0.02)]
-        } else if p.contains("citi") {
-            colors = [Color(red: 0.07, green: 0.36, blue: 0.73), Color(red: 0.05, green: 0.5, blue: 0.6)]
-        } else if p.contains("wells") {
-            colors = [Color(red: 0.75, green: 0.1, blue: 0.1), Color(red: 0.85, green: 0.4, blue: 0.05)]
-        } else if p.contains("bank of") {
-            colors = [Color(red: 0.02, green: 0.14, blue: 0.41), Color(red: 0.01, green: 0.05, blue: 0.25)]
-        } else if p.contains("discover") {
-            colors = [Color(red: 0.95, green: 0.5, blue: 0.0), Color(red: 0.8, green: 0.65, blue: 0.0)]
-        } else if p.contains("usaa") {
-            colors = [Color(red: 0.07, green: 0.36, blue: 0.73), Color(red: 0.3, green: 0.6, blue: 0.9)]
-        } else if p.contains("apple") {
-            colors = [Color(red: 0.2, green: 0.2, blue: 0.2), Color(red: 0.05, green: 0.05, blue: 0.05)]
-        } else {
-            colors = [Color(red: 0.35, green: 0.35, blue: 0.35), Color(red: 0.1, green: 0.1, blue: 0.1)]
-        }
-        return LinearGradient(colors: colors, startPoint: .topLeading, endPoint: .bottomTrailing)
-    }
-
     static let presetProviders = [
         "Chase", "American Express", "Capital One", "Citi",
         "Wells Fargo", "Bank of America", "Discover", "USAA",
-        "Barclays", "US Bank", "Navy Federal", "PNC",
-        "TD Bank", "Synchrony", "Apple Card", "PayPal"
+        "BNC", "RBC", "TD", "Desjardins",
+        "Barclays", "US Bank", "Apple Card", "PayPal"
     ]
+
+    // 3 tons neutres : sombre, moyen, clair
+    static let colorVariants: [(top: Color, bottom: Color)] = [
+        (Color(white: 0.38), Color(white: 0.24)),  // 0 — Sombre
+        (Color(white: 0.54), Color(white: 0.40)),  // 1 — Moyen
+        (Color(white: 0.70), Color(white: 0.56))   // 2 — Clair
+    ]
+
+    static func cardGradient(for index: Int) -> LinearGradient {
+        let variant = colorVariants[min(index, colorVariants.count - 1)]
+        return LinearGradient(
+            colors: [variant.top, variant.bottom],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+    }
 }
 
 struct CreditCardWidget: View {
     let card: Card
 
     var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 16)
-                .fill(CardProvider.gradient(for: card.provider))
-                .shadow(color: .black.opacity(0.25), radius: 12, x: 0, y: 6)
+        ZStack(alignment: .topLeading) {
 
-            // Decorative circles
-            Circle()
-                .fill(.white.opacity(0.06))
-                .frame(width: 180)
-                .offset(x: 90, y: -60)
-            Circle()
-                .fill(.white.opacity(0.04))
-                .frame(width: 140)
-                .offset(x: -80, y: 70)
+            // ── Fond mat uniforme
+            RoundedRectangle(cornerRadius: 22)
+                .fill(
+                    CardProvider.cardGradient(for: card.colorIndex)
+                )
 
+            // ── Contenu
             VStack(alignment: .leading, spacing: 0) {
-                // Top row: provider name + network
-                HStack {
-                    Text(card.provider)
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(.white.opacity(0.9))
-                    Spacer()
-                    networkBadge
-                }
+
+                // Provider (haut gauche)
+                Text(card.provider.uppercased())
+                    .font(.system(size: 11, weight: .regular))
+                    .foregroundStyle(.white.opacity(0.55))
+                    .tracking(2.5)
+                    .lineLimit(1)
 
                 Spacer()
 
-                // Card number
-                Text("•••• •••• •••• \(card.lastFour)")
-                    .font(.system(size: 18, weight: .medium, design: .monospaced))
-                    .foregroundStyle(.white)
+                // Puce EMV
+                chipView
+
+                Spacer()
+
+                // Numéro de carte (centré verticalement)
+                Text("••••  ••••  ••••  \(card.lastFour)")
+                    .font(.system(size: 16, weight: .regular, design: .monospaced))
+                    .foregroundStyle(.white.opacity(0.80))
                     .tracking(2)
 
                 Spacer()
 
-                // Bottom row
-                HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("TITULAIRE")
-                            .font(.system(size: 9, weight: .regular))
-                            .foregroundStyle(.white.opacity(0.6))
-                        Text(card.name)
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundStyle(.white)
-                    }
+                // Ligne bas
+                HStack(alignment: .bottom) {
+                    Text(card.name.uppercased())
+                        .font(.system(size: 11, weight: .regular))
+                        .foregroundStyle(.white.opacity(0.55))
+                        .tracking(2.5)
+                        .lineLimit(1)
                     Spacer()
-                    VStack(alignment: .trailing, spacing: 2) {
-                        Text("LIMITE")
-                            .font(.system(size: 9, weight: .regular))
-                            .foregroundStyle(.white.opacity(0.6))
-                        Text(formatLimit(card.creditLimit))
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundStyle(.white)
-                    }
+                    networkBadge
                 }
             }
-            .padding(20)
+            .padding(24)
         }
         .frame(width: 343, height: 216)
+        .clipShape(RoundedRectangle(cornerRadius: 22))
+        .shadow(color: .black.opacity(0.45), radius: 24, x: 0, y: 12)
     }
+
+    // MARK: - Puce EMV
+
+    private var chipView: some View {
+        RoundedRectangle(cornerRadius: 5)
+            .fill(
+                LinearGradient(
+                    colors: [Color(white: 0.72), Color(white: 0.52)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
+            .frame(width: 36, height: 26)
+            .overlay(
+                ZStack {
+                    VStack(spacing: 6) {
+                        ForEach(0..<3, id: \.self) { _ in
+                            Rectangle()
+                                .fill(Color.black.opacity(0.12))
+                                .frame(height: 0.6)
+                        }
+                    }
+                    Rectangle()
+                        .fill(Color.black.opacity(0.10))
+                        .frame(width: 0.6)
+                    RoundedRectangle(cornerRadius: 2)
+                        .stroke(Color.black.opacity(0.10), lineWidth: 0.6)
+                        .frame(width: 12, height: 14)
+                }
+                .padding(5)
+                .clipShape(RoundedRectangle(cornerRadius: 5))
+            )
+    }
+
+    // MARK: - Logo réseau
 
     @ViewBuilder
     private var networkBadge: some View {
         switch card.network {
         case .visa:
-            Text("VISA")
-                .font(.system(size: 18, weight: .black, design: .serif))
-                .foregroundStyle(.white)
-                .italic()
+            Image("visa_logo")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 52, height: 32)
+
         case .mastercard:
-            HStack(spacing: -8) {
-                Circle().fill(Color.red.opacity(0.85)).frame(width: 26, height: 26)
-                Circle().fill(Color.orange.opacity(0.85)).frame(width: 26, height: 26)
-            }
+            Image("mastercard_logo")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 44, height: 32)
+
         case .amex:
-            Text("AMEX")
-                .font(.system(size: 13, weight: .black))
-                .foregroundStyle(.white)
-                .padding(.horizontal, 6)
-                .padding(.vertical, 2)
-                .overlay(RoundedRectangle(cornerRadius: 4).stroke(.white.opacity(0.7), lineWidth: 1))
+            Image("amex_logo")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 48, height: 48)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
         }
     }
+
+    // MARK: - Formatter
 
     private func formatLimit(_ value: Double) -> String {
         let f = NumberFormatter()

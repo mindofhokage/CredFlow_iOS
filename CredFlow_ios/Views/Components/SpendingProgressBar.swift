@@ -2,20 +2,13 @@
 import SwiftUI
 
 struct SpendingProgressBar: View {
+    @Environment(\.colorScheme) private var colorScheme
     let spent: Double
     let limit: Double
 
     private var progress: Double {
         guard limit > 0 else { return 0 }
         return min(spent / limit, 1.0)
-    }
-
-    private var barColor: Color {
-        switch progress {
-        case ..<0.7:  return .green
-        case ..<0.9:  return .orange
-        default:       return .red
-        }
     }
 
     private var currencyFormatter: NumberFormatter {
@@ -31,34 +24,30 @@ struct SpendingProgressBar: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 8) {
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
-                    RoundedRectangle(cornerRadius: 6)
-                        .fill(Color.secondary.opacity(0.2))
-                        .frame(height: 10)
-                    RoundedRectangle(cornerRadius: 6)
-                        .fill(barColor)
-                        .frame(width: geo.size.width * progress, height: 10)
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(Color.secondary.opacity(0.12))
+                        .frame(height: 6)
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(Color.adaptiveBg(colorScheme))
+                        .frame(width: geo.size.width * progress, height: 6)
                         .animation(.easeInOut, value: progress)
                 }
             }
-            .frame(height: 10)
+            .frame(height: 6)
 
             HStack {
                 Text(fmt(spent))
-                    .font(.caption)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(barColor)
-                Text("/")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Text(fmt(limit))
-                    .font(.caption)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(.primary)
+                Text("sur \(fmt(limit))")
+                    .font(.system(size: 12))
                     .foregroundStyle(.secondary)
                 Spacer()
                 Text("\(Int(progress * 100))%")
-                    .font(.caption)
+                    .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(.secondary)
             }
         }

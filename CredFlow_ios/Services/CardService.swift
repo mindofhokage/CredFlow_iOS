@@ -28,9 +28,35 @@ struct CardService {
     }
 
     static func updateCard(_ card: Card) async throws {
+        struct CardUpdateFields: Encodable {
+            let name: String
+            let provider: String
+            let lastFour: String
+            let creditLimit: Double
+            let billingStartDay: Int
+            let network: String
+            let colorIndex: Int
+
+            enum CodingKeys: String, CodingKey {
+                case name, provider, network
+                case lastFour        = "last_four"
+                case creditLimit     = "credit_limit"
+                case billingStartDay = "billing_start_day"
+                case colorIndex      = "color_index"
+            }
+        }
+        let fields = CardUpdateFields(
+            name: card.name,
+            provider: card.provider,
+            lastFour: card.lastFour,
+            creditLimit: card.creditLimit,
+            billingStartDay: card.billingStartDay,
+            network: card.network.rawValue,
+            colorIndex: card.colorIndex
+        )
         try await client
             .from("cards")
-            .update(card)
+            .update(fields)
             .eq("id", value: card.id.uuidString)
             .execute()
     }

@@ -19,8 +19,14 @@ class CardDetailViewModel {
         BillingPeriod.current(startDay: card.billingStartDay)
     }
 
-    var totalSpent: Double {
-        filteredExpenses.reduce(0) { $0 + $1.amount }
+    /// Dépenses non payées — ce qu'on doit encore à la carte
+    var solde: Double {
+        expenses.filter { !$0.isPaid }.reduce(0) { $0 + $1.amount }
+    }
+
+    /// Crédit encore disponible
+    var available: Double {
+        max(card.creditLimit - solde, 0)
     }
 
     var filteredExpenses: [Expense] {
@@ -52,6 +58,22 @@ class CardDetailViewModel {
                 periodEnd: period.end
             )
         } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func togglePaid(_ expense: Expense) async {
+        let newValue = !expense.isPaid
+        if let idx = expenses.firstIndex(where: { $0.id == expense.id }) {
+            expenses[idx].isPaid = newValue
+        }
+        do {
+            try await ExpenseService.togglePaid(id: expense.id, isPaid: newValue)
+        } catch {
+            // Rollback
+            if let idx = expenses.firstIndex(where: { $0.id == expense.id }) {
+                expenses[idx].isPaid = !newValue
+            }
             errorMessage = error.localizedDescription
         }
     }

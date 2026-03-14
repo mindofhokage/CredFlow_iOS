@@ -162,6 +162,89 @@ struct PremiumSectionLabel: View {
     }
 }
 
+// MARK: - Delete Confirmation Overlay
+
+struct DeleteConfirmationOverlay: View {
+    @Environment(\.colorScheme) private var colorScheme
+    let title: String
+    let message: String
+    var isLoading: Bool = false
+    let onDelete: () -> Void
+    let onCancel: () -> Void
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.45)
+                .ignoresSafeArea()
+                .onTapGesture { if !isLoading { onCancel() } }
+
+            VStack(spacing: 24) {
+                // Icon
+                ZStack {
+                    Circle()
+                        .fill(Color.primary.opacity(0.08))
+                        .frame(width: 68, height: 68)
+                    Image(systemName: "trash")
+                        .font(.system(size: 26, weight: .medium))
+                        .foregroundStyle(.primary)
+                }
+
+                // Texts
+                VStack(spacing: 8) {
+                    Text(title)
+                        .font(.system(size: 18, weight: .bold))
+                        .multilineTextAlignment(.center)
+                    Text(message)
+                        .font(.system(size: 14))
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+
+                // Buttons
+                VStack(spacing: 12) {
+                    Button(action: onDelete) {
+                        ZStack {
+                            if isLoading {
+                                ProgressView().tint(Color.adaptiveFg(colorScheme))
+                            } else {
+                                Text("Supprimer")
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundStyle(Color.adaptiveFg(colorScheme))
+                            }
+                        }
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 54)
+                        .background(Color.adaptiveBg(colorScheme))
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                        .shadow(color: Color.adaptiveBg(colorScheme).opacity(0.3), radius: 12, y: 6)
+                    }
+                    .disabled(isLoading)
+
+                    Button(action: onCancel) {
+                        Text("Annuler")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 54)
+                            .background(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .stroke(Color.secondary.opacity(0.25), lineWidth: 1.5)
+                            )
+                    }
+                    .disabled(isLoading)
+                }
+            }
+            .padding(28)
+            .background(
+                RoundedRectangle(cornerRadius: 24)
+                    .fill(colorScheme == .dark ? Color(white: 0.13) : Color.white)
+                    .shadow(color: .black.opacity(colorScheme == .dark ? 0.4 : 0.15), radius: 30, y: 10)
+            )
+            .padding(.horizontal, 32)
+        }
+    }
+}
+
 // MARK: - Helpers
 
 extension Color {

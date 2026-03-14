@@ -6,6 +6,11 @@ struct DashboardView: View {
     @Environment(\.colorScheme) private var colorScheme
     @State private var vm = DashboardViewModel()
     @State private var path = NavigationPath()
+    @State private var isStackExpanded = false
+
+    private let cardH: CGFloat = 216
+    private let peekH: CGFloat = 62
+    private let expandedGap: CGFloat = 16
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -61,24 +66,7 @@ struct DashboardView: View {
                         } else if vm.cards.isEmpty {
                             emptyState
                         } else {
-                            VStack(spacing: 16) {
-                                ForEach(vm.cards) { card in
-                                    Button {
-                                        path.append(card)
-                                    } label: {
-                                        CreditCardWidget(card: card)
-                                    }
-                                    .buttonStyle(.plain)
-                                    .contextMenu {
-                                        Button(role: .destructive) {
-                                            Task { await vm.deleteCard(card) }
-                                        } label: {
-                                            Label("Supprimer", systemImage: "trash")
-                                        }
-                                    }
-                                }
-                            }
-                            .padding(.horizontal, 20)
+                            stackedCardsSection
                         }
 
                         if let err = vm.errorMessage {
@@ -113,7 +101,9 @@ struct DashboardView: View {
             }
             .navigationBarTitleDisplayMode(.inline)
             .navigationDestination(for: Card.self) { card in
-                CardDetailView(card: card)
+                CardDetailView(card: card) { updated in
+                    vm.updateCard(updated)
+                }
             }
             .toolbar {
                 ToolbarItem(placement: .principal) {
@@ -144,6 +134,80 @@ struct DashboardView: View {
             }
         }
         .task { await vm.loadCards() }
+    }
+
+    // MARK: - Stacked Cards
+
+    @ViewBuilder
+    private var stackedCardsSection: some View {
+        let n = vm.cards.count
+        let collapsedH = cardH + peekH * CGFloat(n - 1)
+        let expandedH  = cardH * CGFloat(n) + expandedGap * CGFloat(n - 1)
+        let totalH     = isStackExpanded ? expandedH : collapsedH
+
+        VStack(spacing: 10) {
+            ZStack(alignment: .top) {
+                ForEach(Array(vm.cards.enumerated()), id: \.element.id) { idx, card in
+                    let i = CGFloat(idx)
+                    let yOff = isStackExpanded
+                        ? (cardH + expandedGap) * i
+                        : peekH * i
+
+                    CreditCardWidget(card: card)
+                        .scaleEffect(
+                            isStackExpanded ? 1.0 : max(1.0 - i * 0.025, 0.88),
+                            anchor: .top
+                        )
+                        .offset(y: yOff)
+                        .zIndex(Double(n - idx))
+                        .onTapGesture {
+                            if n == 1 || isStackExpanded {
+                                path.append(card)
+                            } else {
+                                withAnimation(.spring(response: 0.42, dampingFraction: 0.80)) {
+                                    isStackExpanded = true
+                                }
+                            }
+                        }
+                        .contextMenu {
+                            Button(role: .destructive) {
+                                Task { await vm.deleteCard(card) }
+                            } label: {
+                                Label("Supprimer", systemImage: "trash")
+                            }
+                        }
+                        .animation(.spring(response: 0.42, dampingFraction: 0.80), value: isStackExpanded)
+                }
+            }
+            .frame(height: totalH)
+            .animation(.spring(response: 0.42, dampingFraction: 0.80), value: isStackExpanded)
+
+            // Toggle pill (only when multiple cards)
+            if n > 1 {
+                Button {
+                    withAnimation(.spring(response: 0.42, dampingFraction: 0.80)) {
+                        isStackExpanded.toggle()
+                    }
+                } label: {
+                    HStack(spacing: 5) {
+                        Image(systemName: isStackExpanded ? "chevron.up" : "square.stack.fill")
+                            .font(.system(size: 11, weight: .semibold))
+                        Text(isStackExpanded ? "Réduire" : "\(n) cartes")
+                            .font(.system(size: 12, weight: .medium))
+                    }
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 7)
+                    .background(
+                        Capsule()
+                            .fill(colorScheme == .dark ? Color(white: 0.18) : Color.white)
+                            .shadow(color: .black.opacity(0.07), radius: 6, y: 2)
+                    )
+                }
+                .transition(.opacity)
+            }
+        }
+        .frame(maxWidth: .infinity)
     }
 
     // MARK: - Helpers
