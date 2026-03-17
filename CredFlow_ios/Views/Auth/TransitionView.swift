@@ -3,6 +3,7 @@ import SwiftUI
 
 struct TransitionView: View {
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(LocalizationManager.self) private var loc
     @State private var checkScale:   CGFloat = 0.4
     @State private var checkOpacity: CGFloat = 0
     @State private var ringScale:    CGFloat = 0.6
@@ -21,7 +22,7 @@ struct TransitionView: View {
                         Text("Cred").font(.system(size: 38, weight: .thin))
                         Text("Flow").font(.system(size: 38, weight: .black))
                     }
-                    Text("Votre gestionnaire de crédit")
+                    Text(loc.t("app.tagline"))
                         .font(.system(size: 13))
                         .foregroundStyle(.tertiary)
                         .tracking(0.3)

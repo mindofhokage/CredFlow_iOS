@@ -166,6 +166,7 @@ struct PremiumSectionLabel: View {
 
 struct DeleteConfirmationOverlay: View {
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(LocalizationManager.self) private var loc
     let title: String
     let message: String
     var isLoading: Bool = false
@@ -207,7 +208,7 @@ struct DeleteConfirmationOverlay: View {
                             if isLoading {
                                 ProgressView().tint(Color.adaptiveFg(colorScheme))
                             } else {
-                                Text("Supprimer")
+                                Text(loc.t("common.delete"))
                                     .font(.system(size: 16, weight: .semibold))
                                     .foregroundStyle(Color.adaptiveFg(colorScheme))
                             }
@@ -221,7 +222,7 @@ struct DeleteConfirmationOverlay: View {
                     .disabled(isLoading)
 
                     Button(action: onCancel) {
-                        Text("Annuler")
+                        Text(loc.t("common.cancel"))
                             .font(.system(size: 16, weight: .medium))
                             .foregroundStyle(.secondary)
                             .frame(maxWidth: .infinity)

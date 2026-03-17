@@ -27,6 +27,7 @@ enum CardProvider {
 }
 
 struct CreditCardWidget: View {
+    @Environment(LocalizationManager.self) private var loc
     let card: Card
 
     var body: some View {
@@ -146,7 +147,7 @@ struct CreditCardWidget: View {
         let f = NumberFormatter()
         f.numberStyle = .currency
         f.currencyCode = "CAD"
-        f.locale = Locale(identifier: "fr_CA")
+        f.locale = loc.locale
         f.maximumFractionDigits = 0
         return f.string(from: NSNumber(value: value)) ?? "\(value)"
     }

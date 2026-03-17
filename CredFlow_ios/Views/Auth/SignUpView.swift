@@ -5,6 +5,7 @@ struct SignUpView: View {
     @Environment(AuthService.self) private var authService
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(LocalizationManager.self) private var loc
     @State private var vm = AuthViewModel()
     @State private var signUpSucceeded = false
     @FocusState private var focusedField: Field?
@@ -27,7 +28,7 @@ struct SignUpView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Annuler") { dismiss() }
+                    Button(loc.t("common.cancel")) { dismiss() }
                         .tint(Color.adaptiveBg(colorScheme))
                 }
             }
@@ -51,7 +52,7 @@ struct SignUpView: View {
                                 .font(.system(size: 40, weight: .black))
                         }
                         .tracking(-1)
-                        Text("Créez votre compte gratuitement")
+                        Text(loc.t("signup.subtitle"))
                             .font(.system(size: 14))
                             .foregroundStyle(.secondary)
                     }
@@ -60,7 +61,7 @@ struct SignUpView: View {
 
                     VStack(spacing: 14) {
                         PremiumField(icon: "envelope", isFocused: focusedField == .email) {
-                            TextField("Adresse e-mail", text: $vm.email)
+                            TextField(loc.t("common.email"), text: $vm.email)
                                 .keyboardType(.emailAddress)
                                 .textInputAutocapitalization(.never)
                                 .autocorrectionDisabled()
@@ -70,14 +71,14 @@ struct SignUpView: View {
                         }
 
                         PremiumField(icon: "lock", isFocused: focusedField == .password) {
-                            SecureField("Mot de passe", text: $vm.password)
+                            SecureField(loc.t("common.password"), text: $vm.password)
                                 .focused($focusedField, equals: .password)
                                 .submitLabel(.next)
                                 .onSubmit { focusedField = .confirm }
                         }
 
                         PremiumField(icon: "lock.fill", isFocused: focusedField == .confirm) {
-                            SecureField("Confirmer le mot de passe", text: $vm.confirmPassword)
+                            SecureField(loc.t("signup.confirmPassword"), text: $vm.confirmPassword)
                                 .focused($focusedField, equals: .confirm)
                                 .submitLabel(.done)
                         }
@@ -102,7 +103,7 @@ struct SignUpView: View {
 
             // Buttons pinned at bottom
             VStack(spacing: 12) {
-                PremiumButton(title: "Créer un compte", isLoading: vm.isLoading) {
+                PremiumButton(title: loc.t("signup.createAccount"), isLoading: vm.isLoading) {
                     Task {
                         await vm.signUp(authService: authService)
                         if authService.currentUser != nil {
@@ -131,15 +132,15 @@ struct SignUpView: View {
             Image(systemName: "envelope.badge.checkmark.fill")
                 .font(.system(size: 72))
                 .foregroundStyle(Color.adaptiveBg(colorScheme))
-            Text("Vérifiez votre e-mail")
+            Text(loc.t("signup.checkEmail"))
                 .font(.title2).fontWeight(.bold)
-            Text("Un lien de confirmation a été envoyé à **\(vm.email)**.\nCliquez dessus puis revenez vous connecter.")
+            Text("\(loc.t("signup.confirmationSent")) **\(vm.email)**.\n\(loc.t("signup.clickAndReturn"))")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 32)
             Spacer()
-            PremiumButton(title: "Retour à la connexion") { dismiss() }
+            PremiumButton(title: loc.t("signup.backToLogin")) { dismiss() }
                 .padding(.horizontal, 24)
                 .padding(.bottom, 32)
         }

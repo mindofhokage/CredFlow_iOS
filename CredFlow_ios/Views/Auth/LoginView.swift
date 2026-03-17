@@ -5,6 +5,7 @@ import LocalAuthentication
 struct LoginView: View {
     @Environment(AuthService.self) private var authService
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(LocalizationManager.self) private var loc
     @State private var vm           = AuthViewModel()
     @State private var showSignUp   = false
     @State private var isBioLoading = false
@@ -16,7 +17,7 @@ struct LoginView: View {
         BiometricService.shared.isAvailable && KeychainService.shared.hasCredentials
     }
     private var biometricLabel: String {
-        BiometricService.shared.biometricType == .faceID ? "Continuer avec Face ID" : "Continuer avec Touch ID"
+        BiometricService.shared.biometricType == .faceID ? loc.t("login.continueFaceID") : loc.t("login.continueTouchID")
     }
     private var biometricIcon: String {
         BiometricService.shared.biometricType == .faceID ? "faceid" : "touchid"
@@ -40,7 +41,7 @@ struct LoginView: View {
                                 Text("Flow").font(.system(size: 48, weight: .black))
                             }
                             .tracking(-0.5)
-                            Text("Votre gestionnaire de crédit")
+                            Text(loc.t("app.tagline"))
                                 .font(.system(size: 13, weight: .regular))
                                 .foregroundStyle(.tertiary)
                                 .tracking(0.4)
@@ -62,9 +63,9 @@ struct LoginView: View {
                                 }
 
                                 VStack(spacing: 4) {
-                                    Text("Accès rapide")
+                                    Text(loc.t("login.quickAccess"))
                                         .font(.system(size: 16, weight: .semibold))
-                                    Text("Utilisez \(BiometricService.shared.biometricType == .faceID ? "Face ID" : "Touch ID") pour vous connecter instantanément")
+                                    Text(BiometricService.shared.biometricType == .faceID ? loc.t("login.useFaceIDInstant") : loc.t("login.useTouchIDInstant"))
                                         .font(.system(size: 13))
                                         .foregroundStyle(.secondary)
                                         .multilineTextAlignment(.center)
@@ -88,7 +89,7 @@ struct LoginView: View {
                             // Divider
                             HStack(spacing: 14) {
                                 Rectangle().fill(Color.secondary.opacity(0.18)).frame(height: 1)
-                                Text("ou")
+                                Text(loc.t("common.or"))
                                     .font(.system(size: 12, weight: .medium))
                                     .foregroundStyle(.tertiary)
                                     .tracking(0.5)
@@ -104,7 +105,7 @@ struct LoginView: View {
 
                         // ── Form ─────────────────────────────────────────
                         VStack(alignment: .leading, spacing: 10) {
-                            PremiumSectionLabel(title: "Connexion")
+                            PremiumSectionLabel(title: loc.t("login.section"))
                                 .padding(.horizontal, 4)
 
                             VStack(spacing: 1) {
@@ -114,7 +115,7 @@ struct LoginView: View {
                                         .font(.system(size: 15))
                                         .foregroundStyle(.secondary)
                                         .frame(width: 20)
-                                    TextField("Adresse e-mail", text: $vm.email)
+                                    TextField(loc.t("common.email"), text: $vm.email)
                                         .keyboardType(.emailAddress)
                                         .textInputAutocapitalization(.never)
                                         .autocorrectionDisabled()
@@ -134,7 +135,7 @@ struct LoginView: View {
                                         .font(.system(size: 15))
                                         .foregroundStyle(.secondary)
                                         .frame(width: 20)
-                                    SecureField("Mot de passe", text: $vm.password)
+                                    SecureField(loc.t("common.password"), text: $vm.password)
                                         .focused($focusedField, equals: .password)
                                         .submitLabel(.go)
                                         .onSubmit { Task { await vm.login(authService: authService) } }
@@ -171,14 +172,14 @@ struct LoginView: View {
                         }
 
                         // Se connecter
-                        PremiumButton(title: "Se connecter", isLoading: vm.isLoading) {
+                        PremiumButton(title: loc.t("login.signIn"), isLoading: vm.isLoading) {
                             Task { await vm.login(authService: authService) }
                         }
                         .padding(.horizontal, 24)
                         .padding(.top, 20)
 
                         // Créer un compte
-                        PremiumOutlineButton(title: "Créer un compte") { showSignUp = true }
+                        PremiumOutlineButton(title: loc.t("login.createAccount")) { showSignUp = true }
                             .padding(.horizontal, 24)
                             .padding(.top, 12)
 
@@ -208,7 +209,7 @@ struct LoginView: View {
         guard !isBioLoading else { return }
         isBioLoading = true
         defer { isBioLoading = false }
-        let ok = await BiometricService.shared.authenticate(reason: "Accédez à CredFlow")
+        let ok = await BiometricService.shared.authenticate(reason: loc.t("biometric.accessReason"))
         guard ok, let creds = KeychainService.shared.load() else { return }
         try? await authService.signIn(email: creds.email, password: creds.password)
     }

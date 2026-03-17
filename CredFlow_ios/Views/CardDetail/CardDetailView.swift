@@ -4,6 +4,7 @@ import SwiftUI
 struct CardDetailView: View {
     @Environment(AuthService.self) private var authService
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(LocalizationManager.self) private var loc
     @State private var vm: CardDetailViewModel
     @State private var editingExpense: Expense?
 
@@ -23,7 +24,7 @@ struct CardDetailView: View {
     private var periodFormatter: DateFormatter {
         let f = DateFormatter()
         f.dateFormat = "d MMM"
-        f.locale = Locale(identifier: "fr_CA")
+        f.locale = loc.locale
         return f
     }
 
@@ -31,7 +32,7 @@ struct CardDetailView: View {
         let f = NumberFormatter()
         f.numberStyle = .currency
         f.currencyCode = "CAD"
-        f.locale = Locale(identifier: "fr_CA")
+        f.locale = loc.locale
         f.maximumFractionDigits = 0
         return f.string(from: NSNumber(value: value)) ?? "\(value)"
     }
@@ -40,7 +41,7 @@ struct CardDetailView: View {
         let f = NumberFormatter()
         f.numberStyle = .currency
         f.currencyCode = "CAD"
-        f.locale = Locale(identifier: "fr_CA")
+        f.locale = loc.locale
         return f.string(from: NSNumber(value: value)) ?? "\(value)"
     }
 
@@ -62,7 +63,7 @@ struct CardDetailView: View {
                     // ── Category filter ──────────────────────────────
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 8) {
-                            filterPill(label: "Tout", icon: nil, isSelected: vm.selectedCategory == nil) {
+                            filterPill(label: loc.t("cardDetail.all"), icon: nil, isSelected: vm.selectedCategory == nil) {
                                 vm.selectedCategory = nil
                             }
                             ForEach(ExpenseCategory.allCases) { cat in
@@ -124,14 +125,14 @@ struct CardDetailView: View {
                                                     Task { await vm.togglePaid(expense) }
                                                 } label: {
                                                     Label(
-                                                        expense.isPaid ? "Marquer non payé" : "Marquer comme payé",
+                                                        expense.isPaid ? loc.t("cardDetail.markUnpaid") : loc.t("cardDetail.markPaid"),
                                                         systemImage: expense.isPaid ? "arrow.uturn.left.circle" : "checkmark.circle.fill"
                                                     )
                                                 }
                                                 Button(role: .destructive) {
                                                     Task { await vm.deleteExpense(expense) }
                                                 } label: {
-                                                    Label("Supprimer", systemImage: "trash")
+                                                    Label(loc.t("common.delete"), systemImage: "trash")
                                                 }
                                             }
 
@@ -227,11 +228,11 @@ struct CardDetailView: View {
 
             // Three stats
             HStack(spacing: 0) {
-                statCell(value: fmt(solde), label: "Solde")
+                statCell(value: fmt(solde), label: loc.t("cardDetail.balance"))
                 statDivider
-                statCell(value: fmt(available), label: "Disponible")
+                statCell(value: fmt(available), label: loc.t("cardDetail.available"))
                 statDivider
-                statCell(value: "\(count)", label: count == 1 ? "Dépense" : "Dépenses")
+                statCell(value: "\(count)", label: count == 1 ? loc.t("cardDetail.expenseSingular") : loc.t("cardDetail.expensePlural"))
             }
 
             // Progress bar + period
@@ -257,7 +258,7 @@ struct CardDetailView: View {
                         .font(.system(size: 11))
                         .foregroundStyle(.tertiary)
                     Spacer()
-                    Text("\(Int(progress * 100))% utilisé")
+                    Text("\(Int(progress * 100))% \(loc.t("cardDetail.percentUsed"))")
                         .font(.system(size: 11, weight: .medium))
                         .foregroundStyle(.secondary)
                 }
@@ -309,9 +310,9 @@ struct CardDetailView: View {
                     .foregroundStyle(.secondary)
             }
             VStack(spacing: 6) {
-                Text("Aucune dépense")
+                Text(loc.t("cardDetail.noExpenses"))
                     .font(.system(size: 16, weight: .semibold))
-                Text("Appuyez sur + pour enregistrer\nvotre première dépense")
+                Text(loc.t("cardDetail.tapPlusToAdd"))
                     .font(.system(size: 13))
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)

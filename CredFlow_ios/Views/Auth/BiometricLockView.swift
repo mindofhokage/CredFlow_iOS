@@ -4,6 +4,7 @@ import LocalAuthentication
 
 struct BiometricLockView: View {
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(LocalizationManager.self) private var loc
 
     var onUnlocked: () -> Void
 
@@ -15,8 +16,8 @@ struct BiometricLockView: View {
     }
     private var buttonTitle: String {
         BiometricService.shared.biometricType == .faceID
-            ? "Déverrouiller avec Face ID"
-            : "Déverrouiller avec Touch ID"
+            ? loc.t("biometric.unlockFaceID")
+            : loc.t("biometric.unlockTouchID")
     }
 
     var body: some View {
@@ -32,7 +33,7 @@ struct BiometricLockView: View {
                         Text("Cred").font(.system(size: 38, weight: .thin))
                         Text("Flow").font(.system(size: 38, weight: .black))
                     }
-                    Text("Votre gestionnaire de crédit")
+                    Text(loc.t("app.tagline"))
                         .font(.system(size: 13))
                         .foregroundStyle(.tertiary)
                         .tracking(0.3)
@@ -53,11 +54,11 @@ struct BiometricLockView: View {
                     }
 
                     VStack(spacing: 6) {
-                        Text("Accès sécurisé")
+                        Text(loc.t("biometric.secureAccess"))
                             .font(.system(size: 18, weight: .semibold))
                         Text(failed
-                             ? "Authentification échouée. Réessayez."
-                             : "Utilisez \(BiometricService.shared.biometricType == .faceID ? "Face ID" : "Touch ID") pour accéder à CredFlow")
+                             ? loc.t("biometric.authFailed")
+                             : (BiometricService.shared.biometricType == .faceID ? loc.t("biometric.useFaceIDAccess") : loc.t("biometric.useTouchIDAccess")))
                             .font(.system(size: 13))
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
@@ -82,7 +83,7 @@ struct BiometricLockView: View {
         guard !isAuthenticating else { return }
         isAuthenticating = true
         failed = false
-        let ok = await BiometricService.shared.authenticate(reason: "Déverrouillez CredFlow")
+        let ok = await BiometricService.shared.authenticate(reason: loc.t("biometric.unlockReason"))
         isAuthenticating = false
         if ok { onUnlocked() } else { failed = true }
     }

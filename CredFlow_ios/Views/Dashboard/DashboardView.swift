@@ -4,10 +4,13 @@ import SwiftUI
 struct DashboardView: View {
     @Environment(AuthService.self) private var authService
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(LocalizationManager.self) private var loc
     @State private var vm = DashboardViewModel()
     @State private var path = NavigationPath()
     @State private var isStackExpanded = false
     @State private var showProfile = false
+    @State private var cardToDelete: Card?
+    @State private var pressedCardId: UUID?
 
     private let cardH: CGFloat = 216
     private let peekH: CGFloat = 62
@@ -42,7 +45,7 @@ struct DashboardView: View {
                             VStack(alignment: .leading, spacing: 12) {
                                 // Section label
                                 HStack {
-                                    PremiumSectionLabel(title: "Mes cartes")
+                                    PremiumSectionLabel(title: loc.t("dashboard.myCards"))
                                     Spacer()
                                     if vm.cards.count > 1 {
                                         Button {
@@ -51,7 +54,7 @@ struct DashboardView: View {
                                             }
                                         } label: {
                                             HStack(spacing: 4) {
-                                                Text(isStackExpanded ? "Réduire" : "Tout voir")
+                                                Text(isStackExpanded ? loc.t("dashboard.collapse") : loc.t("dashboard.viewAll"))
                                                     .font(.system(size: 12, weight: .medium))
                                                 Image(systemName: isStackExpanded ? "chevron.up" : "chevron.down")
                                                     .font(.system(size: 10, weight: .semibold))
@@ -93,7 +96,28 @@ struct DashboardView: View {
                         .padding(.bottom, 32)
                     }
                 }
+
+                // ── Delete confirmation ──────────────────────────────
+                if cardToDelete != nil {
+                    DeleteConfirmationOverlay(
+                        title: loc.t("dashboard.deleteTitle"),
+                        message: loc.t("dashboard.deleteMessage"),
+                        isLoading: vm.isLoading,
+                        onDelete: {
+                            Task {
+                                if let card = cardToDelete {
+                                    await vm.deleteCard(card)
+                                    cardToDelete = nil
+                                }
+                            }
+                        },
+                        onCancel: { cardToDelete = nil }
+                    )
+                    .zIndex(10)
+                    .transition(.opacity.combined(with: .scale(scale: 0.95)))
+                }
             }
+            .animation(.spring(response: 0.3, dampingFraction: 0.85), value: cardToDelete != nil)
             .navigationBarTitleDisplayMode(.inline)
             .navigationDestination(for: Card.self) { card in
                 CardDetailView(card: card) { updated in
@@ -140,9 +164,9 @@ struct DashboardView: View {
                 .textCase(.uppercase)
                 .tracking(0.5)
             HStack(spacing: 0) {
-                Text("Mes ")
+                Text(loc.t("dashboard.my"))
                     .font(.system(size: 30, weight: .thin))
-                Text("Cartes")
+                Text(loc.t("dashboard.cards"))
                     .font(.system(size: 30, weight: .black))
             }
         }
@@ -159,21 +183,21 @@ struct DashboardView: View {
             HStack(spacing: 0) {
                 statCell(
                     value: fmtCurrency(totalLimit),
-                    label: "Limite totale"
+                    label: loc.t("dashboard.totalLimit")
                 )
                 Rectangle()
                     .fill(Color.secondary.opacity(0.15))
                     .frame(width: 1, height: 36)
                 statCell(
                     value: "\(vm.cards.count)",
-                    label: vm.cards.count > 1 ? "Cartes" : "Carte"
+                    label: vm.cards.count > 1 ? loc.t("dashboard.cardPlural") : loc.t("dashboard.cardSingular")
                 )
                 Rectangle()
                     .fill(Color.secondary.opacity(0.15))
                     .frame(width: 1, height: 36)
                 statCell(
                     value: currentMonthName(),
-                    label: "Période active"
+                    label: loc.t("dashboard.activePeriod")
                 )
             }
 
@@ -189,7 +213,7 @@ struct DashboardView: View {
                 Image(systemName: "lock.shield")
                     .font(.system(size: 11))
                     .foregroundStyle(.tertiary)
-                Text("Sécurisé")
+                Text(loc.t("dashboard.secured"))
                     .font(.system(size: 11))
                     .foregroundStyle(.tertiary)
             }
@@ -234,6 +258,8 @@ struct DashboardView: View {
 
                     CreditCardWidget(card: card)
                         .padding(.top, topPad)
+                        .scaleEffect(pressedCardId == card.id ? 0.95 : 1.0)
+                        .animation(.spring(response: 0.25, dampingFraction: 0.7), value: pressedCardId)
                         .onTapGesture {
                             if n == 1 || isStackExpanded {
                                 path.append(card)
@@ -243,12 +269,12 @@ struct DashboardView: View {
                                 }
                             }
                         }
-                        .contextMenu {
-                            Button(role: .destructive) {
-                                Task { await vm.deleteCard(card) }
-                            } label: {
-                                Label("Supprimer", systemImage: "trash")
-                            }
+                        .onLongPressGesture(minimumDuration: 0.45) {
+                            let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+                            impactFeedback.impactOccurred()
+                            cardToDelete = card
+                        } onPressingChanged: { pressing in
+                            pressedCardId = pressing ? card.id : nil
                         }
                         .animation(.spring(response: 0.42, dampingFraction: 0.80), value: isStackExpanded)
                 }
@@ -273,9 +299,9 @@ struct DashboardView: View {
             }
 
             VStack(spacing: 8) {
-                Text("Aucune carte")
+                Text(loc.t("dashboard.noCards"))
                     .font(.system(size: 18, weight: .semibold))
-                Text("Ajoutez votre première carte de crédit\npour suivre vos dépenses")
+                Text(loc.t("dashboard.addFirstCard"))
                     .font(.system(size: 14))
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -288,7 +314,7 @@ struct DashboardView: View {
                 HStack(spacing: 6) {
                     Image(systemName: "plus")
                         .font(.system(size: 13, weight: .semibold))
-                    Text("Ajouter une carte")
+                    Text(loc.t("dashboard.addCard"))
                         .font(.system(size: 14, weight: .semibold))
                 }
                 .foregroundStyle(Color.adaptiveFg(colorScheme))
@@ -309,7 +335,7 @@ struct DashboardView: View {
         let f = NumberFormatter()
         f.numberStyle = .currency
         f.currencyCode = "CAD"
-        f.locale = Locale(identifier: "fr_CA")
+        f.locale = loc.locale
         f.maximumFractionDigits = 0
         return f.string(from: NSNumber(value: value)) ?? "\(value)"
     }
@@ -317,14 +343,14 @@ struct DashboardView: View {
     private func currentMonthName() -> String {
         let fmt = DateFormatter()
         fmt.dateFormat = "MMMM"
-        fmt.locale = Locale(identifier: "fr_CA")
+        fmt.locale = loc.locale
         return fmt.string(from: .now).capitalized
     }
 
     private func currentDateString() -> String {
         let fmt = DateFormatter()
         fmt.dateFormat = "EEEE d MMMM"
-        fmt.locale = Locale(identifier: "fr_CA")
+        fmt.locale = loc.locale
         return fmt.string(from: .now)
     }
 }

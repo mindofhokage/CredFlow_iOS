@@ -15,8 +15,14 @@ class DashboardViewModel {
         defer { isLoading = false }
         do {
             cards = try await CardService.fetchCards()
+        } catch is CancellationError {
+            // Pull-to-refresh can cancel the previous load — ignore it
+        } catch let urlError as URLError where urlError.code == .cancelled {
+            // URLSession reports cancellation as URLError — ignore it too
         } catch {
-            errorMessage = error.localizedDescription
+            if !Task.isCancelled {
+                errorMessage = error.localizedDescription
+            }
         }
     }
 

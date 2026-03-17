@@ -35,11 +35,11 @@ class AddExpenseViewModel {
     func save(cardId: UUID, userId: String) async throws {
         guard let amt = amount, amt > 0 else {
             throw NSError(domain: "AddExpense", code: 0,
-                          userInfo: [NSLocalizedDescriptionKey: "Montant invalide."])
+                          userInfo: [NSLocalizedDescriptionKey: LocalizationManager.shared.t("addExpense.errorAmount")])
         }
         guard !merchant.isEmpty else {
             throw NSError(domain: "AddExpense", code: 1,
-                          userInfo: [NSLocalizedDescriptionKey: "Veuillez entrer un marchand."])
+                          userInfo: [NSLocalizedDescriptionKey: LocalizationManager.shared.t("addExpense.errorMerchant")])
         }
         let fmt = ISO8601DateFormatter()
         fmt.formatOptions = [.withFullDate]

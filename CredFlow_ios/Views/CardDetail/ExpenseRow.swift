@@ -2,6 +2,7 @@
 import SwiftUI
 
 struct ExpenseRow: View {
+    @Environment(LocalizationManager.self) private var loc
     let expense: Expense
 
     private var category: ExpenseCategory {
@@ -12,7 +13,7 @@ struct ExpenseRow: View {
         let f = NumberFormatter()
         f.numberStyle = .currency
         f.currencyCode = "CAD"
-        f.locale = Locale(identifier: "fr_CA")
+        f.locale = loc.locale
         return f.string(from: NSNumber(value: expense.amount)) ?? "\(expense.amount)"
     }
 

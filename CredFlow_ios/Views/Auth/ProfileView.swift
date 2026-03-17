@@ -7,8 +7,11 @@ internal import Auth
 
 struct ProfileView: View {
     @Environment(AuthService.self) private var authService
+    @Environment(LocalizationManager.self) private var loc
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
+
+    @Namespace private var langNS
 
     @State private var showChangePassword   = false
     @State private var showChangeEmail      = false
@@ -56,7 +59,7 @@ struct ProfileView: View {
                                         Circle()
                                             .fill(Color.adaptiveBg(colorScheme))
                                             .frame(width: 6, height: 6)
-                                        Text("Compte actif")
+                                        Text(loc.t("profile.activeAccount"))
                                             .font(.system(size: 12))
                                             .foregroundStyle(.secondary)
                                     }
@@ -75,14 +78,14 @@ struct ProfileView: View {
                         .padding(.top, 4)
 
                         // ── Sécurité & Confidentialité ────────────────
-                        sectionCard(label: "Sécurité & Confidentialité") {
+                        sectionCard(label: loc.t("profile.securityPrivacy")) {
                             settingsRow(icon: "lock.rotation", iconBg: Color.adaptiveBg(colorScheme),
-                                        title: "Changer le mot de passe") {
+                                        title: loc.t("profile.changePassword")) {
                                 showChangePassword = true
                             }
                             Divider().padding(.leading, 56)
                             settingsRow(icon: "envelope", iconBg: Color.adaptiveBg(colorScheme),
-                                        title: "Changer l'adresse e-mail") {
+                                        title: loc.t("profile.changeEmail")) {
                                 showChangeEmail = true
                             }
                             if BiometricService.shared.isAvailable {
@@ -108,13 +111,49 @@ struct ProfileView: View {
                             }
                         }
 
+                        // ── Langue ───────────────────────────────────
+                        VStack(alignment: .leading, spacing: 10) {
+                            PremiumSectionLabel(title: loc.t("profile.language"))
+                                .padding(.horizontal, 20)
+
+                            HStack(spacing: 0) {
+                                ForEach(AppLanguage.allCases) { lang in
+                                    let isSelected = loc.currentLanguage == lang
+                                    Button {
+                                        withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+                                            loc.currentLanguage = lang
+                                        }
+                                    } label: {
+                                        Text(lang.displayName)
+                                            .font(.system(size: 14, weight: isSelected ? .semibold : .medium))
+                                            .foregroundStyle(isSelected ? Color.adaptiveFg(colorScheme) : Color.adaptiveBg(colorScheme))
+                                            .frame(maxWidth: .infinity)
+                                            .frame(height: 48)
+                                            .background {
+                                                if isSelected {
+                                                    RoundedRectangle(cornerRadius: 13)
+                                                        .fill(Color.adaptiveBg(colorScheme))
+                                                        .padding(3)
+                                                        .matchedGeometryEffect(id: "langPill", in: langNS)
+                                                }
+                                            }
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                            .background(cardBg)
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                            .shadow(color: .black.opacity(colorScheme == .dark ? 0 : 0.05), radius: 10, y: 2)
+                            .padding(.horizontal, 20)
+                        }
+
                         // ── Informations ──────────────────────────────
-                        sectionCard(label: "Informations") {
-                            infoRow(icon: "info.circle", title: "Version",     value: appVersion)
+                        sectionCard(label: loc.t("profile.information")) {
+                            infoRow(icon: "info.circle", title: loc.t("profile.version"),   value: appVersion)
                             Divider().padding(.leading, 56)
-                            infoRow(icon: "iphone",      title: "Plateforme",  value: "iOS")
+                            infoRow(icon: "iphone",      title: loc.t("profile.platform"),  value: "iOS")
                             Divider().padding(.leading, 56)
-                            infoRow(icon: "building.2",  title: "Développeur", value: "CredFlow Inc.")
+                            infoRow(icon: "building.2",  title: loc.t("profile.developer"), value: "CredFlow Inc.")
                         }
 
                         // ── Déconnexion ───────────────────────────────
@@ -124,7 +163,7 @@ struct ProfileView: View {
                             HStack(spacing: 10) {
                                 Image(systemName: "rectangle.portrait.and.arrow.right")
                                     .font(.system(size: 14, weight: .medium))
-                                Text("Se déconnecter")
+                                Text(loc.t("profile.signOut"))
                                     .font(.system(size: 15, weight: .medium))
                             }
                             .foregroundStyle(.primary)
@@ -146,12 +185,12 @@ struct ProfileView: View {
             .toolbar {
                 ToolbarItem(placement: .principal) {
                     HStack(spacing: 0) {
-                        Text("Mon ").font(.system(size: 18, weight: .thin))
-                        Text("Profil").font(.system(size: 18, weight: .black))
+                        Text(loc.t("profile.my")).font(.system(size: 18, weight: .thin))
+                        Text(loc.t("profile.profile")).font(.system(size: 18, weight: .black))
                     }
                 }
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Fermer") { dismiss() }
+                    Button(loc.t("common.close")) { dismiss() }
                         .tint(Color.adaptiveBg(colorScheme))
                 }
             }
@@ -193,9 +232,9 @@ struct ProfileView: View {
                 .padding(.top, 32)
 
                 VStack(spacing: 6) {
-                    Text("Activer Face ID")
+                    Text(loc.t(BiometricService.shared.biometricType == .faceID ? "profile.enableFaceID" : "profile.enableTouchID"))
                         .font(.system(size: 18, weight: .semibold))
-                    Text("Entrez votre mot de passe pour sauvegarder vos identifiants de façon sécurisée.")
+                    Text(loc.t("profile.faceIDPrompt"))
                         .font(.system(size: 13))
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
@@ -203,7 +242,7 @@ struct ProfileView: View {
                 }
 
                 PremiumField(icon: "lock", isFocused: false) {
-                    SecureField("Mot de passe", text: $promptPassword)
+                    SecureField(loc.t("common.password"), text: $promptPassword)
                         .textContentType(.password)
                         .submitLabel(.done)
                 }
@@ -218,12 +257,12 @@ struct ProfileView: View {
                     .padding(.horizontal, 28)
                 }
 
-                PremiumButton(title: "Confirmer", isLoading: promptLoading) {
+                PremiumButton(title: loc.t("common.confirm"), isLoading: promptLoading) {
                     Task { await confirmFaceIDSetup() }
                 }
                 .padding(.horizontal, 24)
 
-                Button("Annuler") { showPasswordPrompt = false }
+                Button(loc.t("common.cancel")) { showPasswordPrompt = false }
                     .font(.system(size: 14))
                     .foregroundStyle(.secondary)
                     .padding(.bottom, 32)
@@ -234,7 +273,7 @@ struct ProfileView: View {
 
     private func confirmFaceIDSetup() async {
         guard !promptPassword.isEmpty else {
-            promptError = "Veuillez entrer votre mot de passe."; return
+            promptError = loc.t("profile.enterPasswordError"); return
         }
         promptLoading = true; promptError = nil
         defer { promptLoading = false }
@@ -246,7 +285,7 @@ struct ProfileView: View {
             BiometricService.shared.isEnabled = true
             showPasswordPrompt = false
         } catch {
-            promptError = "Mot de passe incorrect."
+            promptError = loc.t("profile.wrongPassword")
             faceIDEnabled = false
         }
     }
@@ -350,6 +389,7 @@ struct ProfileView: View {
 
 struct ChangePasswordView: View {
     @Environment(AuthService.self) private var authService
+    @Environment(LocalizationManager.self) private var loc
     @Environment(\.colorScheme) private var colorScheme
 
     @State private var newPassword     = ""
@@ -380,17 +420,17 @@ struct ChangePasswordView: View {
                         .padding(.top, 16)
 
                         VStack(alignment: .leading, spacing: 10) {
-                            PremiumSectionLabel(title: "Nouveau mot de passe")
+                            PremiumSectionLabel(title: loc.t("changePassword.newSection"))
                                 .padding(.horizontal, 20)
                             VStack(spacing: 12) {
                                 PremiumField(icon: "lock", isFocused: focusedField == .new) {
-                                    SecureField("Nouveau mot de passe", text: $newPassword)
+                                    SecureField(loc.t("changePassword.newPlaceholder"), text: $newPassword)
                                         .focused($focusedField, equals: .new)
                                         .submitLabel(.next)
                                         .onSubmit { focusedField = .confirm }
                                 }
                                 PremiumField(icon: "lock.fill", isFocused: focusedField == .confirm) {
-                                    SecureField("Confirmer le mot de passe", text: $confirmPassword)
+                                    SecureField(loc.t("changePassword.confirmPlaceholder"), text: $confirmPassword)
                                         .focused($focusedField, equals: .confirm)
                                         .submitLabel(.done)
                                 }
@@ -411,7 +451,7 @@ struct ChangePasswordView: View {
                         if success {
                             HStack(spacing: 6) {
                                 Image(systemName: "checkmark.circle.fill").font(.caption)
-                                Text("Mot de passe mis à jour avec succès.").font(.caption)
+                                Text(loc.t("changePassword.success")).font(.caption)
                             }
                             .foregroundStyle(Color.adaptiveBg(colorScheme))
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -424,7 +464,7 @@ struct ChangePasswordView: View {
 
                 VStack(spacing: 0) {
                     Divider()
-                    PremiumButton(title: "Enregistrer", isLoading: isLoading) {
+                    PremiumButton(title: loc.t("common.save"), isLoading: isLoading) {
                         Task { await changePassword() }
                     }
                     .padding(20)
@@ -432,19 +472,19 @@ struct ChangePasswordView: View {
                 .background(colorScheme == .dark ? Color(white: 0.08) : Color.white)
             }
         }
-        .navigationTitle("Mot de passe")
+        .navigationTitle(loc.t("changePassword.title"))
         .navigationBarTitleDisplayMode(.inline)
     }
 
     private func changePassword() async {
         guard !newPassword.isEmpty else {
-            errorMessage = "Veuillez entrer un nouveau mot de passe."; return
+            errorMessage = loc.t("changePassword.errorEmpty"); return
         }
         guard newPassword == confirmPassword else {
-            errorMessage = "Les mots de passe ne correspondent pas."; return
+            errorMessage = loc.t("changePassword.errorMismatch"); return
         }
         guard newPassword.count >= 6 else {
-            errorMessage = "Le mot de passe doit contenir au moins 6 caractères."; return
+            errorMessage = loc.t("changePassword.errorMinLength"); return
         }
         isLoading = true; errorMessage = nil; success = false
         defer { isLoading = false }
@@ -462,6 +502,7 @@ struct ChangePasswordView: View {
 
 struct ChangeEmailView: View {
     @Environment(AuthService.self) private var authService
+    @Environment(LocalizationManager.self) private var loc
     @Environment(\.colorScheme) private var colorScheme
 
     let currentEmail: String
@@ -496,7 +537,7 @@ struct ChangeEmailView: View {
 
                         // Adresse actuelle
                         VStack(alignment: .leading, spacing: 10) {
-                            PremiumSectionLabel(title: "Adresse actuelle")
+                            PremiumSectionLabel(title: loc.t("changeEmail.currentSection"))
                                 .padding(.horizontal, 20)
                             HStack(spacing: 14) {
                                 Image(systemName: "envelope")
@@ -519,10 +560,10 @@ struct ChangeEmailView: View {
 
                         // Nouvelle adresse
                         VStack(alignment: .leading, spacing: 10) {
-                            PremiumSectionLabel(title: "Nouvelle adresse")
+                            PremiumSectionLabel(title: loc.t("changeEmail.newSection"))
                                 .padding(.horizontal, 20)
                             PremiumField(icon: "envelope.badge", isFocused: focused) {
-                                TextField("Nouvelle adresse e-mail", text: $newEmail)
+                                TextField(loc.t("changeEmail.newPlaceholder"), text: $newEmail)
                                     .keyboardType(.emailAddress)
                                     .textInputAutocapitalization(.never)
                                     .autocorrectionDisabled()
@@ -545,7 +586,7 @@ struct ChangeEmailView: View {
                         if success {
                             HStack(spacing: 6) {
                                 Image(systemName: "checkmark.circle.fill").font(.caption)
-                                Text("Un lien de confirmation a été envoyé à votre nouvelle adresse.")
+                                Text(loc.t("changeEmail.success"))
                                     .font(.caption)
                                     .lineSpacing(2)
                             }
@@ -560,7 +601,7 @@ struct ChangeEmailView: View {
 
                 VStack(spacing: 0) {
                     Divider()
-                    PremiumButton(title: "Mettre à jour", isLoading: isLoading) {
+                    PremiumButton(title: loc.t("changeEmail.updateButton"), isLoading: isLoading) {
                         Task { await changeEmail() }
                     }
                     .padding(20)
@@ -568,16 +609,16 @@ struct ChangeEmailView: View {
                 .background(colorScheme == .dark ? Color(white: 0.08) : Color.white)
             }
         }
-        .navigationTitle("Adresse e-mail")
+        .navigationTitle(loc.t("changeEmail.title"))
         .navigationBarTitleDisplayMode(.inline)
     }
 
     private func changeEmail() async {
         guard !newEmail.isEmpty else {
-            errorMessage = "Veuillez entrer une nouvelle adresse e-mail."; return
+            errorMessage = loc.t("changeEmail.errorEmpty"); return
         }
         guard newEmail.contains("@"), newEmail.contains(".") else {
-            errorMessage = "Adresse e-mail invalide."; return
+            errorMessage = loc.t("changeEmail.errorInvalid"); return
         }
         isLoading = true; errorMessage = nil; success = false
         defer { isLoading = false }

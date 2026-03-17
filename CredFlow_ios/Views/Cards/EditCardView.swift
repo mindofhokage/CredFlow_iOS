@@ -4,6 +4,7 @@ import SwiftUI
 struct EditCardView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(LocalizationManager.self) private var loc
 
     var card: Card
     var onUpdated: (Card) -> Void
@@ -53,8 +54,8 @@ struct EditCardView: View {
 
                 if showDeleteConfirm {
                     DeleteConfirmationOverlay(
-                        title: "Supprimer cette carte ?",
-                        message: "Toutes les dépenses associées seront supprimées.",
+                        title: loc.t("editCard.deleteTitle"),
+                        message: loc.t("editCard.deleteMessage"),
                         isLoading: isLoading,
                         onDelete: { Task { await deleteCard() } },
                         onCancel: { showDeleteConfirm = false }
@@ -70,22 +71,59 @@ struct EditCardView: View {
                                 .padding(.top, 16)
 
                             VStack(spacing: 20) {
-                                formSection(title: "Identité de la carte") {
+                                // Section: Apparence
+                                formSection(title: loc.t("addCard.appearance")) {
+                                    VStack(spacing: 16) {
+                                        // Couleur
+                                        VStack(alignment: .leading, spacing: 10) {
+                                            Text(loc.t("addCard.color"))
+                                                .font(.system(size: 13, weight: .medium))
+                                                .foregroundStyle(.secondary)
+                                            colorPicker
+                                        }
+
+                                        Divider()
+
+                                        // Réseau
+                                        VStack(alignment: .leading, spacing: 10) {
+                                            Text(loc.t("addCard.network"))
+                                                .font(.system(size: 13, weight: .medium))
+                                                .foregroundStyle(.secondary)
+                                            Picker(loc.t("addCard.network"), selection: $network) {
+                                                ForEach(CardNetwork.allCases, id: \.self) { n in
+                                                    Text(n.displayName)
+                                                        .font(.system(size: 13, weight: .thin))
+                                                        .tag(n)
+                                                }
+                                            }
+                                            .pickerStyle(.segmented)
+                                        }
+                                    }
+                                    .padding(16)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 16)
+                                            .fill(colorScheme == .dark ? Color(white: 0.13) : Color.white)
+                                            .shadow(color: .black.opacity(colorScheme == .dark ? 0 : 0.05), radius: 10, y: 2)
+                                    )
+                                }
+
+                                // Section: Identité
+                                formSection(title: loc.t("addCard.cardIdentity")) {
                                     VStack(spacing: 12) {
                                         PremiumField(icon: "text.cursor", isFocused: focusedField == .name) {
-                                            TextField("Nom de la carte", text: $name)
+                                            TextField(loc.t("addCard.cardName"), text: $name)
                                                 .focused($focusedField, equals: .name)
                                                 .submitLabel(.next)
                                                 .onSubmit { focusedField = .provider }
                                         }
                                         PremiumField(icon: "building.columns", isFocused: focusedField == .provider) {
-                                            TextField("Banque / Prestataire", text: $provider)
+                                            TextField(loc.t("addCard.bankProvider"), text: $provider)
                                                 .focused($focusedField, equals: .provider)
                                                 .submitLabel(.next)
                                                 .onSubmit { focusedField = .lastFour }
                                         }
                                         PremiumField(icon: "number", isFocused: focusedField == .lastFour) {
-                                            TextField("4 derniers chiffres", text: $lastFour)
+                                            TextField(loc.t("addCard.lastFour"), text: $lastFour)
                                                 .keyboardType(.numberPad)
                                                 .focused($focusedField, equals: .lastFour)
                                                 .onChange(of: lastFour) { _, new in
@@ -95,10 +133,11 @@ struct EditCardView: View {
                                     }
                                 }
 
-                                formSection(title: "Informations financières") {
+                                // Section: Financier
+                                formSection(title: loc.t("addCard.financialInfo")) {
                                     VStack(spacing: 12) {
                                         PremiumField(icon: "dollarsign", isFocused: focusedField == .limit) {
-                                            TextField("Limite de crédit", text: $creditLimitText)
+                                            TextField(loc.t("addCard.creditLimit"), text: $creditLimitText)
                                                 .keyboardType(.decimalPad)
                                                 .focused($focusedField, equals: .limit)
                                         }
@@ -108,13 +147,13 @@ struct EditCardView: View {
                                                 .font(.system(size: 16))
                                                 .foregroundStyle(.secondary)
                                                 .frame(width: 20)
-                                            Text("Début de facturation")
+                                            Text(loc.t("addCard.billingStart"))
                                                 .font(.subheadline)
                                                 .foregroundStyle(.secondary)
                                             Spacer()
                                             Stepper("", value: $billingStartDay, in: 1...28)
                                                 .labelsHidden()
-                                            Text("Jour \(billingStartDay)")
+                                            Text("\(loc.t("addCard.dayFormat")) \(billingStartDay)")
                                                 .font(.subheadline)
                                                 .fontWeight(.medium)
                                         }
@@ -128,21 +167,6 @@ struct EditCardView: View {
                                     }
                                 }
 
-                                formSection(title: "Réseau de paiement") {
-                                    Picker("Réseau", selection: $network) {
-                                        ForEach(CardNetwork.allCases, id: \.self) { n in
-                                            Text(n.displayName)
-                                                .font(.system(size: 13, weight: .thin))
-                                                .tag(n)
-                                        }
-                                    }
-                                    .pickerStyle(.segmented)
-                                }
-
-                                formSection(title: "Couleur de la carte") {
-                                    colorPicker
-                                }
-
                                 if let err = errorMessage {
                                     HStack(spacing: 6) {
                                         Image(systemName: "exclamationmark.circle.fill").font(.caption)
@@ -153,7 +177,7 @@ struct EditCardView: View {
                                 }
 
                                 // Delete button
-                                PremiumOutlineButton(title: "Supprimer la carte", isDestructive: false) {
+                                PremiumOutlineButton(title: loc.t("editCard.deleteCard"), isDestructive: false) {
                                     showDeleteConfirm = true
                                 }
                             }
@@ -165,7 +189,7 @@ struct EditCardView: View {
 
                     VStack(spacing: 0) {
                         Divider()
-                        PremiumButton(title: "Enregistrer", isLoading: isLoading) {
+                        PremiumButton(title: loc.t("common.save"), isLoading: isLoading) {
                             Task { await updateCard() }
                         }
                         .padding(20)
@@ -173,11 +197,11 @@ struct EditCardView: View {
                     .background(colorScheme == .dark ? Color(white: 0.08) : Color.white)
                 }
             }
-            .navigationTitle("Modifier la carte")
+            .navigationTitle(loc.t("editCard.title"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Annuler") { dismiss() }
+                    Button(loc.t("common.cancel")) { dismiss() }
                         .tint(Color.adaptiveBg(colorScheme))
                 }
             }
@@ -187,33 +211,40 @@ struct EditCardView: View {
 
     @ViewBuilder
     private var colorPicker: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 16) {
             ForEach(0..<CardProvider.colorVariants.count, id: \.self) { i in
                 let variant = CardProvider.colorVariants[i]
+                let isSelected = colorIndex == i
                 Button {
-                    colorIndex = i
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                        colorIndex = i
+                    }
                 } label: {
-                    RoundedRectangle(cornerRadius: 10)
+                    Circle()
                         .fill(LinearGradient(
                             colors: [variant.top, variant.bottom],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         ))
-                        .frame(height: 44)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 10)
-                                .stroke(colorIndex == i ? Color.adaptiveBg(colorScheme) : Color.clear, lineWidth: 2.5)
-                        )
+                        .frame(width: 40, height: 40)
                         .overlay(
                             Image(systemName: "checkmark")
-                                .font(.system(size: 13, weight: .bold))
+                                .font(.system(size: 14, weight: .bold))
                                 .foregroundStyle(.white)
-                                .opacity(colorIndex == i ? 1 : 0)
+                                .opacity(isSelected ? 1 : 0)
+                                .scaleEffect(isSelected ? 1 : 0.5)
                         )
+                        .overlay(
+                            Circle()
+                                .stroke(Color.adaptiveBg(colorScheme), lineWidth: isSelected ? 2.5 : 0)
+                                .frame(width: 48, height: 48)
+                        )
+                        .scaleEffect(isSelected ? 1.1 : 1.0)
                 }
                 .buttonStyle(.plain)
             }
         }
+        .padding(.vertical, 4)
     }
 
     @ViewBuilder
@@ -227,7 +258,7 @@ struct EditCardView: View {
     private func updateCard() async {
         guard !name.isEmpty, !provider.isEmpty, lastFour.count == 4,
               let limit = Double(creditLimitText), limit > 0 else {
-            errorMessage = "Veuillez remplir tous les champs correctement."
+            errorMessage = loc.t("editCard.errorFillAll")
             return
         }
         isLoading = true; errorMessage = nil; defer { isLoading = false }

@@ -3,6 +3,7 @@ import SwiftUI
 
 struct SplashView: View {
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(LocalizationManager.self) private var loc
 
     @State private var logoScale:      CGFloat = 0.75
     @State private var logoOpacity:    CGFloat = 0
@@ -26,7 +27,7 @@ struct SplashView: View {
                     .scaleEffect(logoScale)
                     .opacity(logoOpacity)
 
-                    Text("Votre gestionnaire de crédit")
+                    Text(loc.t("app.tagline"))
                         .font(.system(size: 13, weight: .regular))
                         .foregroundStyle(.tertiary)
                         .tracking(0.5)

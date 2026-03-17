@@ -3,6 +3,7 @@ import SwiftUI
 
 struct SpendingProgressBar: View {
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(LocalizationManager.self) private var loc
     let spent: Double
     let limit: Double
 
@@ -15,7 +16,7 @@ struct SpendingProgressBar: View {
         let f = NumberFormatter()
         f.numberStyle = .currency
         f.currencyCode = "CAD"
-        f.locale = Locale(identifier: "fr_CA")
+        f.locale = loc.locale
         return f
     }
 
@@ -42,7 +43,7 @@ struct SpendingProgressBar: View {
                 Text(fmt(spent))
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(.primary)
-                Text("sur \(fmt(limit))")
+                Text("\(loc.t("spending.outOf")) \(fmt(limit))")
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)
                 Spacer()

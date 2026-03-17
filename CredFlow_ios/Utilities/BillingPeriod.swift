@@ -33,7 +33,7 @@ struct BillingPeriod {
     static func formatted(_ period: (start: Date, end: Date)) -> String {
         let fmt = DateFormatter()
         fmt.dateFormat = "d MMM"
-        fmt.locale = Locale(identifier: "fr_CA")
+        fmt.locale = LocalizationManager.shared.locale
         return "\(fmt.string(from: period.start)) → \(fmt.string(from: period.end))"
     }
 }

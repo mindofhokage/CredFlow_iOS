@@ -24,7 +24,7 @@ final class BiometricService {
     }
 
     /// Presents the system biometric prompt. Returns true on success.
-    func authenticate(reason: String = "Accédez à CredFlow") async -> Bool {
+    func authenticate(reason: String) async -> Bool {
         let ctx = LAContext()
         guard ctx.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: nil) else {
             return false

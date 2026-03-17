@@ -16,18 +16,7 @@ enum ExpenseCategory: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 
     var displayName: String {
-        switch self {
-        case .alimentation:   return "Alimentation"
-        case .restaurant:     return "Restaurant"
-        case .transport:      return "Transport"
-        case .divertissement: return "Divertissement"
-        case .sante:          return "Santé"
-        case .maison:         return "Maison"
-        case .voyages:        return "Voyages"
-        case .shopping:       return "Shopping"
-        case .services:       return "Services"
-        case .autre:          return "Autre"
-        }
+        LocalizationManager.shared.t("category.\(rawValue)")
     }
 
     var icon: String {

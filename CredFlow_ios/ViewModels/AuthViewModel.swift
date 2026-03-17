@@ -11,7 +11,7 @@ class AuthViewModel {
 
     func login(authService: AuthService) async {
         guard !email.isEmpty, !password.isEmpty else {
-            errorMessage = "Veuillez remplir tous les champs."
+            errorMessage = LocalizationManager.shared.t("auth.fillAllFields")
             return
         }
         isLoading = true
@@ -26,15 +26,15 @@ class AuthViewModel {
 
     func signUp(authService: AuthService) async {
         guard !email.isEmpty, !password.isEmpty else {
-            errorMessage = "Veuillez remplir tous les champs."
+            errorMessage = LocalizationManager.shared.t("auth.fillAllFields")
             return
         }
         guard password == confirmPassword else {
-            errorMessage = "Les mots de passe ne correspondent pas."
+            errorMessage = LocalizationManager.shared.t("auth.passwordsMismatch")
             return
         }
         guard password.count >= 6 else {
-            errorMessage = "Le mot de passe doit contenir au moins 6 caractères."
+            errorMessage = LocalizationManager.shared.t("auth.passwordMinLength")
             return
         }
         isLoading = true

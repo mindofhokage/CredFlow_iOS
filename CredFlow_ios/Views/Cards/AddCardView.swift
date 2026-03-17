@@ -6,6 +6,7 @@ struct AddCardView: View {
     @Environment(AuthService.self) private var authService
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(LocalizationManager.self) private var loc
 
     var onCardAdded: (Card) -> Void
 
@@ -34,8 +35,8 @@ struct AddCardView: View {
     private var previewCard: Card {
         Card(
             id: UUID(), userId: UUID(),
-            name: name.isEmpty ? "Nom de la carte" : name,
-            provider: provider.isEmpty ? "Banque" : provider,
+            name: name.isEmpty ? loc.t("addCard.previewName") : name,
+            provider: provider.isEmpty ? loc.t("addCard.previewBank") : provider,
             lastFour: lastFour.isEmpty ? "0000" : String(lastFour.prefix(4)).padding(toLength: 4, withPad: "0", startingAt: 0),
             creditLimit: Double(creditLimitText) ?? 0,
             billingStartDay: billingStartDay,
@@ -58,11 +59,47 @@ struct AddCardView: View {
                                 .padding(.top, 16)
 
                             VStack(spacing: 20) {
+                                // Section: Apparence
+                                formSection(title: loc.t("addCard.appearance")) {
+                                    VStack(spacing: 16) {
+                                        // Couleur
+                                        VStack(alignment: .leading, spacing: 10) {
+                                            Text(loc.t("addCard.color"))
+                                                .font(.system(size: 13, weight: .medium))
+                                                .foregroundStyle(.secondary)
+                                            colorPicker
+                                        }
+
+                                        Divider()
+
+                                        // Réseau
+                                        VStack(alignment: .leading, spacing: 10) {
+                                            Text(loc.t("addCard.network"))
+                                                .font(.system(size: 13, weight: .medium))
+                                                .foregroundStyle(.secondary)
+                                            Picker(loc.t("addCard.network"), selection: $network) {
+                                                ForEach(CardNetwork.allCases, id: \.self) { n in
+                                                    Text(n.displayName)
+                                                        .font(.system(size: 13, weight: .thin))
+                                                        .tag(n)
+                                                }
+                                            }
+                                            .pickerStyle(.segmented)
+                                        }
+                                    }
+                                    .padding(16)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 16)
+                                            .fill(colorScheme == .dark ? Color(white: 0.13) : Color.white)
+                                            .shadow(color: .black.opacity(colorScheme == .dark ? 0 : 0.05), radius: 10, y: 2)
+                                    )
+                                }
+
                                 // Section: Identité
-                                formSection(title: "Identité de la carte") {
+                                formSection(title: loc.t("addCard.cardIdentity")) {
                                     VStack(spacing: 12) {
                                         PremiumField(icon: "text.cursor", isFocused: focusedField == .name) {
-                                            TextField("Nom de la carte", text: $name)
+                                            TextField(loc.t("addCard.cardName"), text: $name)
                                                 .focused($focusedField, equals: .name)
                                                 .submitLabel(.next)
                                                 .onSubmit { focusedField = .provider }
@@ -70,7 +107,7 @@ struct AddCardView: View {
 
                                         VStack(spacing: 8) {
                                             PremiumField(icon: "building.columns", isFocused: focusedField == .provider) {
-                                                TextField("Banque / Prestataire", text: $providerQuery)
+                                                TextField(loc.t("addCard.bankProvider"), text: $providerQuery)
                                                     .focused($focusedField, equals: .provider)
                                                     .autocorrectionDisabled()
                                                     .onChange(of: providerQuery) { _, new in
@@ -108,7 +145,7 @@ struct AddCardView: View {
                                         }
 
                                         PremiumField(icon: "number", isFocused: focusedField == .lastFour) {
-                                            TextField("4 derniers chiffres", text: $lastFour)
+                                            TextField(loc.t("addCard.lastFour"), text: $lastFour)
                                                 .keyboardType(.numberPad)
                                                 .focused($focusedField, equals: .lastFour)
                                                 .onChange(of: lastFour) { _, new in
@@ -119,10 +156,10 @@ struct AddCardView: View {
                                 }
 
                                 // Section: Financier
-                                formSection(title: "Informations financières") {
+                                formSection(title: loc.t("addCard.financialInfo")) {
                                     VStack(spacing: 12) {
                                         PremiumField(icon: "dollarsign", isFocused: focusedField == .limit) {
-                                            TextField("Limite de crédit", text: $creditLimitText)
+                                            TextField(loc.t("addCard.creditLimit"), text: $creditLimitText)
                                                 .keyboardType(.decimalPad)
                                                 .focused($focusedField, equals: .limit)
                                         }
@@ -133,13 +170,13 @@ struct AddCardView: View {
                                                 .font(.system(size: 16))
                                                 .foregroundStyle(.secondary)
                                                 .frame(width: 20)
-                                            Text("Début de facturation")
+                                            Text(loc.t("addCard.billingStart"))
                                                 .font(.subheadline)
                                                 .foregroundStyle(.secondary)
                                             Spacer()
-                                            Stepper("Jour \(billingStartDay)", value: $billingStartDay, in: 1...28)
+                                            Stepper("\(loc.t("addCard.dayFormat")) \(billingStartDay)", value: $billingStartDay, in: 1...28)
                                                 .labelsHidden()
-                                            Text("Jour \(billingStartDay)")
+                                            Text("\(loc.t("addCard.dayFormat")) \(billingStartDay)")
                                                 .font(.subheadline)
                                                 .fontWeight(.medium)
                                         }
@@ -152,23 +189,6 @@ struct AddCardView: View {
                                                         radius: 8, y: 2)
                                         )
                                     }
-                                }
-
-                                // Section: Réseau
-                                formSection(title: "Réseau de paiement") {
-                                    Picker("Réseau", selection: $network) {
-                                        ForEach(CardNetwork.allCases, id: \.self) { n in
-                                            Text(n.displayName)
-                                                .font(.system(size: 13, weight: .thin))
-                                                .tag(n)
-                                        }
-                                    }
-                                    .pickerStyle(.segmented)
-                                }
-
-                                // Section: Couleur
-                                formSection(title: "Couleur de la carte") {
-                                    colorPicker
                                 }
 
                                 if let err = errorMessage {
@@ -189,7 +209,7 @@ struct AddCardView: View {
                     // Bottom button
                     VStack(spacing: 0) {
                         Divider()
-                        PremiumButton(title: "Ajouter la carte", isLoading: isLoading) {
+                        PremiumButton(title: loc.t("addCard.addButton"), isLoading: isLoading) {
                             Task { await addCard() }
                         }
                         .padding(20)
@@ -199,11 +219,11 @@ struct AddCardView: View {
                     )
                 }
             }
-            .navigationTitle("Nouvelle carte")
+            .navigationTitle(loc.t("addCard.title"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Annuler") { dismiss() }
+                    Button(loc.t("common.cancel")) { dismiss() }
                         .tint(Color.adaptiveBg(colorScheme))
                 }
             }
@@ -212,33 +232,40 @@ struct AddCardView: View {
 
     @ViewBuilder
     private var colorPicker: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 16) {
             ForEach(0..<CardProvider.colorVariants.count, id: \.self) { i in
                 let variant = CardProvider.colorVariants[i]
+                let isSelected = colorIndex == i
                 Button {
-                    colorIndex = i
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                        colorIndex = i
+                    }
                 } label: {
-                    RoundedRectangle(cornerRadius: 10)
+                    Circle()
                         .fill(LinearGradient(
                             colors: [variant.top, variant.bottom],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         ))
-                        .frame(height: 44)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 10)
-                                .stroke(colorIndex == i ? Color.adaptiveBg(colorScheme) : Color.clear, lineWidth: 2.5)
-                        )
+                        .frame(width: 40, height: 40)
                         .overlay(
                             Image(systemName: "checkmark")
-                                .font(.system(size: 13, weight: .bold))
+                                .font(.system(size: 14, weight: .bold))
                                 .foregroundStyle(.white)
-                                .opacity(colorIndex == i ? 1 : 0)
+                                .opacity(isSelected ? 1 : 0)
+                                .scaleEffect(isSelected ? 1 : 0.5)
                         )
+                        .overlay(
+                            Circle()
+                                .stroke(Color.adaptiveBg(colorScheme), lineWidth: isSelected ? 2.5 : 0)
+                                .frame(width: 48, height: 48)
+                        )
+                        .scaleEffect(isSelected ? 1.1 : 1.0)
                 }
                 .buttonStyle(.plain)
             }
         }
+        .padding(.vertical, 4)
     }
 
     @ViewBuilder
@@ -250,14 +277,14 @@ struct AddCardView: View {
     }
 
     private func addCard() async {
-        guard !name.isEmpty else { errorMessage = "Veuillez entrer un nom."; return }
-        guard !provider.isEmpty else { errorMessage = "Veuillez entrer une banque."; return }
-        guard lastFour.count == 4 else { errorMessage = "Entrez exactement 4 chiffres."; return }
+        guard !name.isEmpty else { errorMessage = loc.t("addCard.errorName"); return }
+        guard !provider.isEmpty else { errorMessage = loc.t("addCard.errorBank"); return }
+        guard lastFour.count == 4 else { errorMessage = loc.t("addCard.errorFourDigits"); return }
         guard let limit = Double(creditLimitText), limit > 0 else {
-            errorMessage = "Limite de crédit invalide."; return
+            errorMessage = loc.t("addCard.errorInvalidLimit"); return
         }
         guard let userId = authService.currentUser?.id.uuidString else {
-            errorMessage = "Non authentifié."; return
+            errorMessage = loc.t("common.notAuthenticated"); return
         }
         isLoading = true; errorMessage = nil
         defer { isLoading = false }
