@@ -98,7 +98,9 @@ struct Translations {
         "biometric.accessReason":      [.fr: "Accédez à CredFlow",          .en: "Access CredFlow"],
 
         // ─── Login ──────────────────────────────────────────
-        "login.quickAccess":         [.fr: "Accès rapide",       .en: "Quick access"],
+        "login.welcomeBack":         [.fr: "Bon retour.",             .en: "Welcome back."],
+        "login.welcomeBackSub":      [.fr: "Connectez-vous pour continuer.", .en: "Sign in to continue."],
+        "login.quickAccess":         [.fr: "Accès rapide",            .en: "Quick access"],
         "login.useFaceIDInstant":    [.fr: "Utilisez Face ID pour vous connecter instantanément",
                                       .en: "Use Face ID to sign in instantly"],
         "login.useTouchIDInstant":   [.fr: "Utilisez Touch ID pour vous connecter instantanément",
@@ -107,7 +109,12 @@ struct Translations {
         "login.continueTouchID":     [.fr: "Continuer avec Touch ID", .en: "Continue with Touch ID"],
         "login.section":             [.fr: "Connexion",               .en: "Sign in"],
         "login.signIn":              [.fr: "Se connecter",            .en: "Sign in"],
-        "login.createAccount":       [.fr: "Créer un compte",        .en: "Create an account"],
+        "login.forgotPassword":      [.fr: "Mot de passe oublié ?",   .en: "Forgot password?"],
+        "login.resetSent":           [.fr: "Lien envoyé",             .en: "Link sent"],
+        "login.resetSentSub":        [.fr: "Vérifiez votre boîte mail.",    .en: "Check your inbox."],
+        "login.noAccount":           [.fr: "Pas encore de compte ?",  .en: "No account yet?"],
+        "login.createAccount":       [.fr: "Créer un compte",         .en: "Create an account"],
+        "login.createAccountLink":   [.fr: "Créer un compte",         .en: "Create one"],
 
         // ─── SignUp ─────────────────────────────────────────
         "signup.subtitle":           [.fr: "Créez votre compte gratuitement", .en: "Create your account for free"],
@@ -242,6 +249,7 @@ struct Translations {
 
         // ─── Auth Validation ────────────────────────────────
         "auth.fillAllFields":        [.fr: "Veuillez remplir tous les champs.", .en: "Please fill in all fields."],
+        "auth.fieldRequired":        [.fr: "est requis",   .en: "is required"],
         "auth.passwordsMismatch":    [.fr: "Les mots de passe ne correspondent pas.", .en: "Passwords do not match."],
         "auth.passwordMinLength":    [.fr: "Le mot de passe doit contenir au moins 6 caractères.",
                                       .en: "Password must be at least 6 characters."],

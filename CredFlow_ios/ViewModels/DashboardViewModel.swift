@@ -10,11 +10,17 @@ class DashboardViewModel {
     var totalMonthlySpending: Double = 0
 
     func loadCards() async {
-        isLoading = true
+        // Afficher le cache immédiatement, spinner seulement si aucune donnée
+        if let cached = CacheService.loadCards() {
+            cards = cached
+        }
+        isLoading = cards.isEmpty
         errorMessage = nil
         defer { isLoading = false }
         do {
-            cards = try await CardService.fetchCards()
+            let fresh = try await CardService.fetchCards()
+            cards = fresh
+            CacheService.saveCards(fresh)
         } catch is CancellationError {
             // Pull-to-refresh can cancel the previous load — ignore it
         } catch let urlError as URLError where urlError.code == .cancelled {
@@ -36,6 +42,7 @@ class DashboardViewModel {
         do {
             try await CardService.deleteCard(id: card.id)
             cards.removeAll { $0.id == card.id }
+            CacheService.saveCards(cards)
         } catch {
             errorMessage = error.localizedDescription
         }

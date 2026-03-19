@@ -47,16 +47,22 @@ class CardDetailViewModel {
     }
 
     func loadExpenses() async {
-        isLoading = true
+        let period = billingPeriod
+        // Afficher le cache immédiatement, spinner seulement si aucune donnée
+        if let cached = CacheService.loadExpenses(cardId: card.id, periodStart: period.start) {
+            expenses = cached
+        }
+        isLoading = expenses.isEmpty
         errorMessage = nil
         defer { isLoading = false }
-        let period = billingPeriod
         do {
-            expenses = try await ExpenseService.fetchExpenses(
+            let fresh = try await ExpenseService.fetchExpenses(
                 cardId: card.id,
                 periodStart: period.start,
                 periodEnd: period.end
             )
+            expenses = fresh
+            CacheService.saveExpenses(fresh, cardId: card.id, periodStart: period.start)
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -69,6 +75,7 @@ class CardDetailViewModel {
         }
         do {
             try await ExpenseService.togglePaid(id: expense.id, isPaid: newValue)
+            CacheService.saveExpenses(expenses, cardId: card.id, periodStart: billingPeriod.start)
         } catch {
             // Rollback
             if let idx = expenses.firstIndex(where: { $0.id == expense.id }) {
@@ -82,6 +89,7 @@ class CardDetailViewModel {
         do {
             try await ExpenseService.deleteExpense(id: expense.id)
             expenses.removeAll { $0.id == expense.id }
+            CacheService.saveExpenses(expenses, cardId: card.id, periodStart: billingPeriod.start)
         } catch {
             errorMessage = error.localizedDescription
         }

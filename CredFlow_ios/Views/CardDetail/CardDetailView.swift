@@ -87,7 +87,7 @@ struct CardDetailView: View {
                         emptyState
 
                     } else {
-                        VStack(spacing: 2) {
+                        VStack(spacing: 12) {
                             ForEach(vm.expensesByDate, id: \.date) { group in
                                 let dailyTotal = group.expenses.reduce(0) { $0 + $1.amount }
 
@@ -110,35 +110,12 @@ struct CardDetailView: View {
                                 // Rows
                                 VStack(spacing: 0) {
                                     ForEach(group.expenses) { expense in
-                                        VStack(spacing: 0) {
-                                            Button {
-                                                editingExpense = expense
-                                            } label: {
-                                                ExpenseRow(expense: expense)
-                                                    .padding(.horizontal, 16)
-                                                    .padding(.vertical, 11)
-                                                    .contentShape(Rectangle())
-                                            }
-                                            .buttonStyle(.plain)
-                                            .contextMenu {
-                                                Button {
-                                                    Task { await vm.togglePaid(expense) }
-                                                } label: {
-                                                    Label(
-                                                        expense.isPaid ? loc.t("cardDetail.markUnpaid") : loc.t("cardDetail.markPaid"),
-                                                        systemImage: expense.isPaid ? "arrow.uturn.left.circle" : "checkmark.circle.fill"
-                                                    )
-                                                }
-                                                Button(role: .destructive) {
-                                                    Task { await vm.deleteExpense(expense) }
-                                                } label: {
-                                                    Label(loc.t("common.delete"), systemImage: "trash")
-                                                }
-                                            }
-
-                                            if expense.id != group.expenses.last?.id {
-                                                Divider().padding(.leading, 64)
-                                            }
+                                        SwipeableExpenseRow(expense: expense) {
+                                            editingExpense = expense
+                                        } onTogglePaid: {
+                                            Task { await vm.togglePaid(expense) }
+                                        } onDelete: {
+                                            Task { await vm.deleteExpense(expense) }
                                         }
                                     }
                                 }
@@ -347,6 +324,95 @@ struct CardDetailView: View {
             )
             .clipShape(Capsule())
             .shadow(color: .black.opacity(isSelected ? 0.12 : 0.04), radius: 4, y: 1)
+        }
+    }
+}
+
+// MARK: - SwipeableExpenseRow
+
+private struct SwipeableExpenseRow: View {
+    @Environment(LocalizationManager.self) private var loc
+    @Environment(\.colorScheme) private var colorScheme
+
+    let expense: Expense
+    let onTap: () -> Void
+    let onTogglePaid: () -> Void
+    let onDelete: () -> Void
+
+    @State private var offset: CGFloat = 0
+    @State private var prevTranslation: CGFloat = 0
+
+    private let actionWidth: CGFloat = 72
+
+    var body: some View {
+        ZStack(alignment: .trailing) {
+            // Action révélée par le swipe
+            Button {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { offset = 0 }
+                onTogglePaid()
+            } label: {
+                VStack(spacing: 4) {
+                    Image(systemName: expense.isPaid ? "arrow.uturn.left" : "checkmark")
+                        .font(.system(size: 15, weight: .semibold))
+                    Text(expense.isPaid ? loc.t("cardDetail.markUnpaid") : loc.t("cardDetail.markPaid"))
+                        .font(.system(size: 9, weight: .medium))
+                        .multilineTextAlignment(.center)
+                }
+                .foregroundStyle(.white)
+                .frame(width: actionWidth)
+                .frame(maxHeight: .infinity)
+            }
+            .background(expense.isPaid ? Color(white: colorScheme == .dark ? 0.35 : 0.55) : Color.black)
+
+            // Ligne principale
+            ExpenseRow(expense: expense)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 14)
+                .contentShape(Rectangle())
+                .background(colorScheme == .dark ? Color(white: 0.13) : Color.white)
+                .offset(x: offset)
+                .onTapGesture {
+                    if offset != 0 {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { offset = 0 }
+                    } else {
+                        onTap()
+                    }
+                }
+                .simultaneousGesture(
+                    DragGesture(minimumDistance: 15, coordinateSpace: .local)
+                        .onChanged { value in
+                            guard abs(value.translation.width) > abs(value.translation.height) else { return }
+                            let delta = value.translation.width - prevTranslation
+                            prevTranslation = value.translation.width
+                            offset = min(0, max(offset + delta, -actionWidth))
+                        }
+                        .onEnded { value in
+                            prevTranslation = 0
+                            guard abs(value.translation.width) > abs(value.translation.height) else { return }
+                            withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+                                offset = offset < -(actionWidth / 2) ? -actionWidth : 0
+                            }
+                        }
+                )
+                .contextMenu {
+                    Button {
+                        onTogglePaid()
+                    } label: {
+                        Label(
+                            expense.isPaid ? loc.t("cardDetail.markUnpaid") : loc.t("cardDetail.markPaid"),
+                            systemImage: expense.isPaid ? "arrow.uturn.left.circle" : "checkmark.circle.fill"
+                        )
+                    }
+                    Button(role: .destructive) {
+                        onDelete()
+                    } label: {
+                        Label(loc.t("common.delete"), systemImage: "trash")
+                    }
+                }
+        }
+        .clipped()
+        .onChange(of: expense.isPaid) {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { offset = 0 }
         }
     }
 }

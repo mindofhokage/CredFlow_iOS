@@ -78,6 +78,22 @@ struct Card: Codable, Identifiable, Hashable {
         }
         createdAt = parsedCreatedAt
     }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id,              forKey: .id)
+        try c.encode(userId,          forKey: .userId)
+        try c.encode(name,            forKey: .name)
+        try c.encode(provider,        forKey: .provider)
+        try c.encode(lastFour,        forKey: .lastFour)
+        try c.encode(creditLimit,     forKey: .creditLimit)
+        try c.encode(billingStartDay, forKey: .billingStartDay)
+        try c.encode(network,         forKey: .network)
+        try c.encode(colorIndex,      forKey: .colorIndex)
+        let fmt = ISO8601DateFormatter()
+        fmt.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        try c.encode(fmt.string(from: createdAt), forKey: .createdAt)
+    }
 }
 
 struct CardInput: Encodable {

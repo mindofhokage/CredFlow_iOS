@@ -59,6 +59,24 @@ struct Expense: Codable, Identifiable {
         }
         createdAt = parsedCreatedAt
     }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id,       forKey: .id)
+        try c.encode(cardId,   forKey: .cardId)
+        try c.encode(userId,   forKey: .userId)
+        try c.encode(amount,   forKey: .amount)
+        try c.encode(merchant, forKey: .merchant)
+        try c.encode(category, forKey: .category)
+        try c.encode(note,     forKey: .note)
+        try c.encode(isPaid,   forKey: .isPaid)
+        let dateFmt = ISO8601DateFormatter()
+        dateFmt.formatOptions = [.withFullDate]
+        try c.encode(dateFmt.string(from: date), forKey: .date)
+        let tsFmt = ISO8601DateFormatter()
+        tsFmt.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        try c.encode(tsFmt.string(from: createdAt), forKey: .createdAt)
+    }
 }
 
 struct ExpenseInput: Encodable {

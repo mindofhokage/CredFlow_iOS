@@ -10,10 +10,6 @@ class AuthViewModel {
     var errorMessage: String?
 
     func login(authService: AuthService) async {
-        guard !email.isEmpty, !password.isEmpty else {
-            errorMessage = LocalizationManager.shared.t("auth.fillAllFields")
-            return
-        }
         isLoading = true
         errorMessage = nil
         defer { isLoading = false }

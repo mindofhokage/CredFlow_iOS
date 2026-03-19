@@ -34,6 +34,7 @@ class AuthService {
         currentUser = nil
         KeychainService.shared.delete()
         BiometricService.shared.isEnabled = false
+        CacheService.clearAll()
     }
 
     func restoreSession() async {
@@ -43,6 +44,10 @@ class AuthService {
         } catch {
             currentUser = nil
         }
+    }
+
+    func resetPassword(email: String) async throws {
+        try await client.auth.resetPasswordForEmail(email)
     }
 
     func updatePassword(_ newPassword: String) async throws {
