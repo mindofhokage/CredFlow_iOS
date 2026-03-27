@@ -6,6 +6,8 @@ class CardDetailViewModel {
     var card: Card
     var expenses: [Expense] = []
     var selectedCategory: String? = nil
+    var searchText: String = ""
+    var periodOffset: Int = 0
     var showAddExpense = false
     var showEditCard = false
     var isLoading = false
@@ -16,8 +18,10 @@ class CardDetailViewModel {
     }
 
     var billingPeriod: (start: Date, end: Date) {
-        BillingPeriod.current(startDay: card.billingStartDay)
+        BillingPeriod.period(startDay: card.billingStartDay, monthOffset: periodOffset)
     }
+
+    var isCurrentPeriod: Bool { periodOffset == 0 }
 
     /// Dépenses non payées — ce qu'on doit encore à la carte
     var solde: Double {
@@ -30,8 +34,22 @@ class CardDetailViewModel {
     }
 
     var filteredExpenses: [Expense] {
-        guard let cat = selectedCategory else { return expenses }
-        return expenses.filter { $0.category == cat }
+        var result = expenses
+
+        if let cat = selectedCategory {
+            result = result.filter { $0.category == cat }
+        }
+
+        let query = searchText.trimmingCharacters(in: .whitespaces).lowercased()
+        if !query.isEmpty {
+            result = result.filter { expense in
+                expense.merchant.lowercased().contains(query)
+                || (expense.note ?? "").lowercased().contains(query)
+                || String(format: "%.2f", expense.amount).contains(query)
+            }
+        }
+
+        return result
     }
 
     var expensesByDate: [(date: Date, expenses: [Expense])] {
@@ -93,5 +111,17 @@ class CardDetailViewModel {
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+
+    func goToPreviousPeriod() async {
+        guard periodOffset > -12 else { return }
+        periodOffset -= 1
+        await loadExpenses()
+    }
+
+    func goToNextPeriod() async {
+        guard periodOffset < 0 else { return }
+        periodOffset += 1
+        await loadExpenses()
     }
 }

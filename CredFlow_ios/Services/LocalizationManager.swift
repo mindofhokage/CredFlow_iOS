@@ -83,6 +83,7 @@ struct Translations {
         "common.password":          [.fr: "Mot de passe",     .en: "Password"],
         "common.email":             [.fr: "Adresse e-mail",   .en: "Email address"],
         "common.notAuthenticated":  [.fr: "Non authentifié.", .en: "Not authenticated."],
+        "common.back":              [.fr: "Retour",           .en: "Back"],
 
         // ─── App ────────────────────────────────────────────
         "app.tagline":              [.fr: "Votre gestionnaire de crédit", .en: "Your credit manager"],
@@ -133,7 +134,10 @@ struct Translations {
         "dashboard.myCards":         [.fr: "Mes cartes",    .en: "My cards"],
         "dashboard.collapse":        [.fr: "Réduire",       .en: "Collapse"],
         "dashboard.viewAll":         [.fr: "Tout voir",     .en: "View all"],
+        "dashboard.totalSpent":      [.fr: "Solde dû",       .en: "Owed"],
+        "dashboard.totalAvailable":  [.fr: "Disponible",    .en: "Available"],
         "dashboard.totalLimit":      [.fr: "Limite totale", .en: "Total limit"],
+        "dashboard.outOf":           [.fr: "sur",           .en: "of"],
         "dashboard.cardSingular":    [.fr: "Carte",         .en: "Card"],
         "dashboard.cardPlural":      [.fr: "Cartes",        .en: "Cards"],
         "dashboard.activePeriod":    [.fr: "Période active", .en: "Active period"],
@@ -188,6 +192,9 @@ struct Translations {
         "cardDetail.noExpenses":     [.fr: "Aucune dépense",       .en: "No expenses"],
         "cardDetail.tapPlusToAdd":   [.fr: "Appuyez sur + pour enregistrer\nvotre première dépense",
                                       .en: "Tap + to record\nyour first expense"],
+        "cardDetail.noExpensesPast": [.fr: "Aucune dépense pour cette période", .en: "No expenses for this period"],
+        "cardDetail.searchPlaceholder": [.fr: "Marchand, montant, note…", .en: "Merchant, amount, note…"],
+        "cardDetail.noResults":  [.fr: "Aucun résultat",  .en: "No results"],
 
         // ─── AddExpense ─────────────────────────────────────
         "addExpense.title":          [.fr: "Nouvelle dépense",    .en: "New expense"],
@@ -224,6 +231,9 @@ struct Translations {
                                       .en: "Enter your password to securely save your credentials."],
         "profile.enterPasswordError":[.fr: "Veuillez entrer votre mot de passe.", .en: "Please enter your password."],
         "profile.wrongPassword":     [.fr: "Mot de passe incorrect.",             .en: "Incorrect password."],
+        "profile.secured":           [.fr: "Sécurisé",      .en: "Secured"],
+        "profile.account":           [.fr: "Compte",         .en: "Account"],
+        "profile.member":            [.fr: "Membre",         .en: "Member"],
 
         // ─── ChangePassword ─────────────────────────────────
         "changePassword.title":          [.fr: "Mot de passe",               .en: "Password"],

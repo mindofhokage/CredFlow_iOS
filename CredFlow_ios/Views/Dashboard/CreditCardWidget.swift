@@ -76,6 +76,17 @@ struct CreditCardWidget: View {
                 }
             }
             .padding(24)
+
+            // ── Edge bevel (bordure métal) ──────────────────────
+            RoundedRectangle(cornerRadius: 22)
+                .strokeBorder(
+                    LinearGradient(
+                        colors: [.white.opacity(0.20), .white.opacity(0.04)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 0.5
+                )
         }
         .frame(width: 343, height: 216)
         .clipShape(RoundedRectangle(cornerRadius: 22))
@@ -112,6 +123,17 @@ struct CreditCardWidget: View {
                 }
                 .padding(5)
                 .clipShape(RoundedRectangle(cornerRadius: 5))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 5)
+                    .strokeBorder(
+                        LinearGradient(
+                            colors: [Color.white.opacity(0.25), Color.white.opacity(0.05)],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        ),
+                        lineWidth: 0.5
+                    )
             )
     }
 

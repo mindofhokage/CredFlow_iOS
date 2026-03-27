@@ -20,6 +20,7 @@ struct ProfileView: View {
     @State private var promptPassword       = ""
     @State private var promptError: String? = nil
     @State private var promptLoading        = false
+    @State private var appeared             = false
 
     private var cardBg: Color {
         colorScheme == .dark ? Color(white: 0.13) : Color.white
@@ -27,6 +28,14 @@ struct ProfileView: View {
 
     private var initial: String {
         authService.currentUser?.email?.prefix(1).uppercased() ?? "?"
+    }
+
+    private var memberSince: String {
+        guard let created = authService.currentUser?.createdAt else { return "" }
+        let fmt = DateFormatter()
+        fmt.dateFormat = "MMMM yyyy"
+        fmt.locale = loc.locale
+        return fmt.string(from: created)
     }
 
     var body: some View {
@@ -37,62 +46,26 @@ struct ProfileView: View {
                 ScrollView {
                     VStack(spacing: 28) {
 
-                        // ── Hero header ───────────────────────────────
-                        VStack(spacing: 0) {
-                            HStack(spacing: 16) {
-                                // Avatar with initial
-                                ZStack {
-                                    Circle()
-                                        .fill(Color.adaptiveBg(colorScheme))
-                                        .frame(width: 56, height: 56)
-                                    Text(initial)
-                                        .font(.system(size: 22, weight: .semibold))
-                                        .foregroundStyle(Color.adaptiveFg(colorScheme))
-                                }
+                        // ── Hero Profile Card ────────────────────────
+                        heroProfileSection
+                            .padding(.horizontal, 24)
+                            .padding(.top, 8)
+                            .offset(y: appeared ? 0 : 20)
+                            .opacity(appeared ? 1 : 0)
 
-                                VStack(alignment: .leading, spacing: 3) {
-                                    Text(authService.currentUser?.email ?? "")
-                                        .font(.system(size: 15, weight: .medium))
-                                        .foregroundStyle(.primary)
-                                        .lineLimit(1)
-                                    HStack(spacing: 5) {
-                                        Circle()
-                                            .fill(Color.adaptiveBg(colorScheme))
-                                            .frame(width: 6, height: 6)
-                                        Text(loc.t("profile.activeAccount"))
-                                            .font(.system(size: 12))
-                                            .foregroundStyle(.secondary)
-                                    }
-                                }
-                                Spacer()
-                            }
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 20)
-                            .background(
-                                RoundedRectangle(cornerRadius: 20)
-                                    .fill(cardBg)
-                                    .shadow(color: .black.opacity(colorScheme == .dark ? 0 : 0.06), radius: 12, y: 3)
-                            )
-                            .padding(.horizontal, 20)
-                        }
-                        .padding(.top, 4)
-
-                        // ── Sécurité & Confidentialité ────────────────
+                        // ── Security ─────────────────────────────────
                         sectionCard(label: loc.t("profile.securityPrivacy")) {
-                            settingsRow(icon: "lock.rotation", iconBg: Color.adaptiveBg(colorScheme),
-                                        title: loc.t("profile.changePassword")) {
+                            settingsRow(icon: "lock.rotation", title: loc.t("profile.changePassword")) {
                                 showChangePassword = true
                             }
                             Divider().padding(.leading, 56)
-                            settingsRow(icon: "envelope", iconBg: Color.adaptiveBg(colorScheme),
-                                        title: loc.t("profile.changeEmail")) {
+                            settingsRow(icon: "envelope", title: loc.t("profile.changeEmail")) {
                                 showChangeEmail = true
                             }
                             if BiometricService.shared.isAvailable {
                                 Divider().padding(.leading, 56)
                                 toggleRow(
                                     icon: BiometricService.shared.biometricType == .faceID ? "faceid" : "touchid",
-                                    iconBg: Color.adaptiveBg(colorScheme),
                                     title: BiometricService.shared.biometricType == .faceID ? "Face ID" : "Touch ID",
                                     isOn: $faceIDEnabled
                                 )
@@ -101,7 +74,6 @@ struct ProfileView: View {
                                         if KeychainService.shared.hasCredentials {
                                             BiometricService.shared.isEnabled = true
                                         } else {
-                                            // Need credentials — ask for password
                                             showPasswordPrompt = true
                                         }
                                     } else {
@@ -110,11 +82,13 @@ struct ProfileView: View {
                                 }
                             }
                         }
+                        .offset(y: appeared ? 0 : 30)
+                        .opacity(appeared ? 1 : 0)
 
-                        // ── Langue ───────────────────────────────────
+                        // ── Language ─────────────────────────────────
                         VStack(alignment: .leading, spacing: 10) {
                             PremiumSectionLabel(title: loc.t("profile.language"))
-                                .padding(.horizontal, 20)
+                                .padding(.horizontal, 24)
 
                             HStack(spacing: 0) {
                                 ForEach(AppLanguage.allCases) { lang in
@@ -131,7 +105,7 @@ struct ProfileView: View {
                                             .frame(height: 48)
                                             .background {
                                                 if isSelected {
-                                                    RoundedRectangle(cornerRadius: 13)
+                                                    RoundedRectangle(cornerRadius: 16)
                                                         .fill(Color.adaptiveBg(colorScheme))
                                                         .padding(3)
                                                         .matchedGeometryEffect(id: "langPill", in: langNS)
@@ -142,12 +116,14 @@ struct ProfileView: View {
                                 }
                             }
                             .background(cardBg)
-                            .clipShape(RoundedRectangle(cornerRadius: 16))
-                            .shadow(color: .black.opacity(colorScheme == .dark ? 0 : 0.05), radius: 10, y: 2)
-                            .padding(.horizontal, 20)
+                            .clipShape(RoundedRectangle(cornerRadius: 20))
+                            .shadow(color: .black.opacity(colorScheme == .dark ? 0 : 0.05), radius: 12, y: 3)
+                            .padding(.horizontal, 24)
                         }
+                        .offset(y: appeared ? 0 : 35)
+                        .opacity(appeared ? 1 : 0)
 
-                        // ── Informations ──────────────────────────────
+                        // ── Information ──────────────────────────────
                         sectionCard(label: loc.t("profile.information")) {
                             infoRow(icon: "info.circle", title: loc.t("profile.version"),   value: appVersion)
                             Divider().padding(.leading, 56)
@@ -155,8 +131,10 @@ struct ProfileView: View {
                             Divider().padding(.leading, 56)
                             infoRow(icon: "building.2",  title: loc.t("profile.developer"), value: "CredFlow Inc.")
                         }
+                        .offset(y: appeared ? 0 : 40)
+                        .opacity(appeared ? 1 : 0)
 
-                        // ── Déconnexion ───────────────────────────────
+                        // ── Sign out ─────────────────────────────────
                         Button {
                             Task { try? await authService.signOut() }
                         } label: {
@@ -166,17 +144,14 @@ struct ProfileView: View {
                                 Text(loc.t("profile.signOut"))
                                     .font(.system(size: 15, weight: .medium))
                             }
-                            .foregroundStyle(.primary)
+                            .foregroundStyle(.secondary)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 16)
-                            .background(
-                                RoundedRectangle(cornerRadius: 16)
-                                    .fill(cardBg)
-                                    .shadow(color: .black.opacity(colorScheme == .dark ? 0 : 0.05), radius: 10, y: 2)
-                            )
                         }
                         .buttonStyle(.plain)
-                        .padding(.horizontal, 20)
+                        .padding(.horizontal, 24)
+                        .offset(y: appeared ? 0 : 45)
+                        .opacity(appeared ? 1 : 0)
                     }
                     .padding(.bottom, 48)
                 }
@@ -204,12 +179,116 @@ struct ProfileView: View {
         }
         // ── Password prompt to activate Face ID ───────────────
         .sheet(isPresented: $showPasswordPrompt, onDismiss: {
-            // If user dismissed without confirming, revert toggle
             if !BiometricService.shared.isEnabled { faceIDEnabled = false }
             promptPassword = ""; promptError = nil
         }) {
             faceIDPasswordPrompt
         }
+        .task {
+            withAnimation(.spring(response: 0.7, dampingFraction: 0.8)) {
+                appeared = true
+            }
+        }
+    }
+
+    // MARK: - Hero Profile Card
+
+    @ViewBuilder
+    private var heroProfileSection: some View {
+        VStack(spacing: 0) {
+            // Avatar + name
+            VStack(spacing: 14) {
+                ZStack {
+                    Circle()
+                        .fill(Color.adaptiveBg(colorScheme))
+                        .frame(width: 72, height: 72)
+                    Text(initial)
+                        .font(.system(size: 28, weight: .bold))
+                        .foregroundStyle(Color.adaptiveFg(colorScheme))
+                }
+
+                VStack(spacing: 4) {
+                    Text(authService.currentUser?.email ?? "")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(.primary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+
+                    HStack(spacing: 6) {
+                        Circle()
+                            .fill(Color.green)
+                            .frame(width: 6, height: 6)
+                        Text(loc.t("profile.activeAccount"))
+                            .font(.system(size: 12))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.top, 28)
+            .padding(.bottom, 20)
+
+            // Divider
+            Rectangle()
+                .fill(Color.secondary.opacity(0.10))
+                .frame(height: 1)
+                .padding(.horizontal, 16)
+
+            // Stats row
+            HStack(spacing: 0) {
+                miniStat(
+                    icon: "shield.checkered",
+                    value: loc.t("profile.secured"),
+                    label: loc.t("profile.account")
+                )
+
+                Rectangle()
+                    .fill(Color.secondary.opacity(0.10))
+                    .frame(width: 1, height: 32)
+
+                miniStat(
+                    icon: "calendar",
+                    value: memberSince,
+                    label: loc.t("profile.member")
+                )
+
+                Rectangle()
+                    .fill(Color.secondary.opacity(0.10))
+                    .frame(width: 1, height: 32)
+
+                miniStat(
+                    icon: "globe",
+                    value: loc.currentLanguage.displayName,
+                    label: loc.t("profile.language")
+                )
+            }
+            .padding(.vertical, 14)
+        }
+        .background(
+            RoundedRectangle(cornerRadius: 24)
+                .fill(cardBg)
+                .shadow(color: .black.opacity(colorScheme == .dark ? 0 : 0.06), radius: 16, y: 4)
+        )
+    }
+
+    @ViewBuilder
+    private func miniStat(icon: String, value: String, label: String) -> some View {
+        VStack(spacing: 4) {
+            HStack(spacing: 4) {
+                Image(systemName: icon)
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundStyle(.tertiary)
+                Text(value)
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(.primary)
+                    .minimumScaleFactor(0.7)
+                    .lineLimit(1)
+            }
+            Text(label)
+                .font(.system(size: 10))
+                .foregroundStyle(.tertiary)
+        }
+        .frame(maxWidth: .infinity)
     }
 
     // MARK: - Face ID password prompt
@@ -219,10 +298,9 @@ struct ProfileView: View {
         ZStack {
             PremiumBackground()
             VStack(spacing: 24) {
-                // Icon
                 ZStack {
                     Circle()
-                        .fill(colorScheme == .dark ? Color(white: 0.13) : Color.white)
+                        .fill(cardBg)
                         .frame(width: 72, height: 72)
                         .shadow(color: .black.opacity(0.07), radius: 12, y: 3)
                     Image(systemName: BiometricService.shared.biometricType == .faceID ? "faceid" : "touchid")
@@ -279,9 +357,7 @@ struct ProfileView: View {
         defer { promptLoading = false }
         do {
             let email = authService.currentUser?.email ?? ""
-            // Verify credentials by signing in
             try await authService.signIn(email: email, password: promptPassword)
-            // signIn already saves to Keychain — now enable biometrics
             BiometricService.shared.isEnabled = true
             showPasswordPrompt = false
         } catch {
@@ -296,25 +372,24 @@ struct ProfileView: View {
     private func sectionCard(label: String, @ViewBuilder rows: () -> some View) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             PremiumSectionLabel(title: label)
-                .padding(.horizontal, 20)
+                .padding(.horizontal, 24)
             VStack(spacing: 0) { rows() }
                 .background(
-                    RoundedRectangle(cornerRadius: 16)
+                    RoundedRectangle(cornerRadius: 20)
                         .fill(cardBg)
-                        .shadow(color: .black.opacity(colorScheme == .dark ? 0 : 0.05), radius: 10, y: 2)
+                        .shadow(color: .black.opacity(colorScheme == .dark ? 0 : 0.05), radius: 12, y: 3)
                 )
-                .padding(.horizontal, 20)
+                .padding(.horizontal, 24)
         }
     }
 
     @ViewBuilder
-    private func settingsRow(icon: String, iconBg: Color, title: String, action: @escaping () -> Void) -> some View {
+    private func settingsRow(icon: String, title: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: 12) {
-                // Icon badge
                 ZStack {
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(iconBg)
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(Color.adaptiveBg(colorScheme))
                         .frame(width: 32, height: 32)
                     Image(systemName: icon)
                         .font(.system(size: 14, weight: .medium))
@@ -335,11 +410,11 @@ struct ProfileView: View {
     }
 
     @ViewBuilder
-    private func toggleRow(icon: String, iconBg: Color, title: String, isOn: Binding<Bool>) -> some View {
+    private func toggleRow(icon: String, title: String, isOn: Binding<Bool>) -> some View {
         HStack(spacing: 12) {
             ZStack {
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(iconBg)
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(Color.adaptiveBg(colorScheme))
                     .frame(width: 32, height: 32)
                 Image(systemName: icon)
                     .font(.system(size: 14, weight: .medium))
@@ -361,7 +436,7 @@ struct ProfileView: View {
     private func infoRow(icon: String, title: String, value: String) -> some View {
         HStack(spacing: 12) {
             ZStack {
-                RoundedRectangle(cornerRadius: 8)
+                RoundedRectangle(cornerRadius: 10)
                     .fill(Color.secondary.opacity(0.1))
                     .frame(width: 32, height: 32)
                 Image(systemName: icon)
@@ -408,7 +483,6 @@ struct ChangePasswordView: View {
             VStack(spacing: 0) {
                 ScrollView {
                     VStack(spacing: 24) {
-                        // Icon
                         ZStack {
                             Circle()
                                 .fill(colorScheme == .dark ? Color(white: 0.18) : Color(white: 0.92))
@@ -421,7 +495,7 @@ struct ChangePasswordView: View {
 
                         VStack(alignment: .leading, spacing: 10) {
                             PremiumSectionLabel(title: loc.t("changePassword.newSection"))
-                                .padding(.horizontal, 20)
+                                .padding(.horizontal, 24)
                             VStack(spacing: 12) {
                                 PremiumField(icon: "lock", isFocused: focusedField == .new) {
                                     SecureField(loc.t("changePassword.newPlaceholder"), text: $newPassword)
@@ -435,7 +509,7 @@ struct ChangePasswordView: View {
                                         .submitLabel(.done)
                                 }
                             }
-                            .padding(.horizontal, 20)
+                            .padding(.horizontal, 24)
                         }
 
                         if let err = errorMessage {
@@ -445,7 +519,7 @@ struct ChangePasswordView: View {
                             }
                             .foregroundStyle(.red)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 24)
+                            .padding(.horizontal, 28)
                         }
 
                         if success {
@@ -455,7 +529,7 @@ struct ChangePasswordView: View {
                             }
                             .foregroundStyle(Color.adaptiveBg(colorScheme))
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 24)
+                            .padding(.horizontal, 28)
                         }
                     }
                     .padding(.bottom, 32)
@@ -467,7 +541,7 @@ struct ChangePasswordView: View {
                     PremiumButton(title: loc.t("common.save"), isLoading: isLoading) {
                         Task { await changePassword() }
                     }
-                    .padding(20)
+                    .padding(24)
                 }
                 .background(colorScheme == .dark ? Color(white: 0.08) : Color.white)
             }
@@ -524,7 +598,6 @@ struct ChangeEmailView: View {
             VStack(spacing: 0) {
                 ScrollView {
                     VStack(spacing: 24) {
-                        // Icon
                         ZStack {
                             Circle()
                                 .fill(colorScheme == .dark ? Color(white: 0.18) : Color(white: 0.92))
@@ -538,7 +611,7 @@ struct ChangeEmailView: View {
                         // Adresse actuelle
                         VStack(alignment: .leading, spacing: 10) {
                             PremiumSectionLabel(title: loc.t("changeEmail.currentSection"))
-                                .padding(.horizontal, 20)
+                                .padding(.horizontal, 24)
                             HStack(spacing: 14) {
                                 Image(systemName: "envelope")
                                     .font(.system(size: 15))
@@ -551,17 +624,17 @@ struct ChangeEmailView: View {
                             .padding(.horizontal, 16)
                             .padding(.vertical, 15)
                             .background(
-                                RoundedRectangle(cornerRadius: 14)
+                                RoundedRectangle(cornerRadius: 16)
                                     .fill(cardBg)
-                                    .shadow(color: .black.opacity(colorScheme == .dark ? 0 : 0.05), radius: 8, y: 2)
+                                    .shadow(color: .black.opacity(colorScheme == .dark ? 0 : 0.05), radius: 10, y: 2)
                             )
-                            .padding(.horizontal, 20)
+                            .padding(.horizontal, 24)
                         }
 
                         // Nouvelle adresse
                         VStack(alignment: .leading, spacing: 10) {
                             PremiumSectionLabel(title: loc.t("changeEmail.newSection"))
-                                .padding(.horizontal, 20)
+                                .padding(.horizontal, 24)
                             PremiumField(icon: "envelope.badge", isFocused: focused) {
                                 TextField(loc.t("changeEmail.newPlaceholder"), text: $newEmail)
                                     .keyboardType(.emailAddress)
@@ -570,7 +643,7 @@ struct ChangeEmailView: View {
                                     .focused($focused)
                                     .submitLabel(.done)
                             }
-                            .padding(.horizontal, 20)
+                            .padding(.horizontal, 24)
                         }
 
                         if let err = errorMessage {
@@ -580,7 +653,7 @@ struct ChangeEmailView: View {
                             }
                             .foregroundStyle(.red)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 24)
+                            .padding(.horizontal, 28)
                         }
 
                         if success {
@@ -592,7 +665,7 @@ struct ChangeEmailView: View {
                             }
                             .foregroundStyle(Color.adaptiveBg(colorScheme))
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 24)
+                            .padding(.horizontal, 28)
                         }
                     }
                     .padding(.bottom, 32)
@@ -604,7 +677,7 @@ struct ChangeEmailView: View {
                     PremiumButton(title: loc.t("changeEmail.updateButton"), isLoading: isLoading) {
                         Task { await changeEmail() }
                     }
-                    .padding(20)
+                    .padding(24)
                 }
                 .background(colorScheme == .dark ? Color(white: 0.08) : Color.white)
             }

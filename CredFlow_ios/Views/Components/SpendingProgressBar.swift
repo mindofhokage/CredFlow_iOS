@@ -28,13 +28,13 @@ struct SpendingProgressBar: View {
         VStack(alignment: .leading, spacing: 8) {
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
-                    RoundedRectangle(cornerRadius: 4)
-                        .fill(Color.secondary.opacity(0.12))
+                    Capsule()
+                        .fill(Color.secondary.opacity(0.10))
                         .frame(height: 6)
-                    RoundedRectangle(cornerRadius: 4)
+                    Capsule()
                         .fill(Color.adaptiveBg(colorScheme))
-                        .frame(width: geo.size.width * progress, height: 6)
-                        .animation(.easeInOut, value: progress)
+                        .frame(width: max(geo.size.width * progress, 6), height: 6)
+                        .animation(.easeInOut(duration: 0.6), value: progress)
                 }
             }
             .frame(height: 6)

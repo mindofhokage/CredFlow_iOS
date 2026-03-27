@@ -60,13 +60,13 @@ struct PremiumField<Content: View>: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 16)
         .background(
-            RoundedRectangle(cornerRadius: 14)
+            RoundedRectangle(cornerRadius: 16)
                 .fill(colorScheme == .dark ? Color(white: 0.14) : Color.white)
                 .shadow(color: .black.opacity(colorScheme == .dark ? 0 : 0.06),
-                        radius: 8, x: 0, y: 2)
+                        radius: 10, x: 0, y: 3)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 14)
+            RoundedRectangle(cornerRadius: 16)
                 .stroke(isFocused ? accentColor.opacity(0.4) : Color.clear, lineWidth: 1.5)
         )
     }
@@ -95,10 +95,10 @@ struct PremiumButton: View {
                 }
             }
             .frame(maxWidth: .infinity)
-            .frame(height: 54)
+            .frame(height: 56)
             .background(bg)
-            .clipShape(RoundedRectangle(cornerRadius: 16))
-            .shadow(color: bg.opacity(0.3), radius: 12, x: 0, y: 6)
+            .clipShape(RoundedRectangle(cornerRadius: 18))
+            .shadow(color: bg.opacity(0.25), radius: 14, x: 0, y: 6)
         }
         .disabled(isLoading)
     }
@@ -122,9 +122,9 @@ struct PremiumOutlineButton: View {
                 .font(.system(size: 16, weight: .medium))
                 .foregroundStyle(color)
                 .frame(maxWidth: .infinity)
-                .frame(height: 54)
+                .frame(height: 56)
                 .background(
-                    RoundedRectangle(cornerRadius: 16)
+                    RoundedRectangle(cornerRadius: 18)
                         .stroke(color.opacity(0.3), lineWidth: 1.5)
                 )
         }
@@ -140,10 +140,10 @@ struct PremiumCard<Content: View>: View {
     var body: some View {
         content()
             .background(
-                RoundedRectangle(cornerRadius: 16)
+                RoundedRectangle(cornerRadius: 20)
                     .fill(colorScheme == .dark ? Color(white: 0.13) : Color.white)
                     .shadow(color: .black.opacity(colorScheme == .dark ? 0 : 0.05),
-                            radius: 10, x: 0, y: 2)
+                            radius: 12, x: 0, y: 3)
             )
     }
 }
@@ -154,10 +154,10 @@ struct PremiumSectionLabel: View {
     let title: String
     var body: some View {
         Text(title)
-            .font(.system(size: 12, weight: .semibold))
+            .font(.system(size: 11, weight: .semibold))
             .foregroundStyle(.secondary)
             .textCase(.uppercase)
-            .tracking(0.5)
+            .tracking(1.2)
             .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
@@ -214,10 +214,10 @@ struct DeleteConfirmationOverlay: View {
                             }
                         }
                         .frame(maxWidth: .infinity)
-                        .frame(height: 54)
+                        .frame(height: 56)
                         .background(Color.adaptiveBg(colorScheme))
-                        .clipShape(RoundedRectangle(cornerRadius: 16))
-                        .shadow(color: Color.adaptiveBg(colorScheme).opacity(0.3), radius: 12, y: 6)
+                        .clipShape(RoundedRectangle(cornerRadius: 18))
+                        .shadow(color: Color.adaptiveBg(colorScheme).opacity(0.25), radius: 14, y: 6)
                     }
                     .disabled(isLoading)
 
@@ -226,9 +226,9 @@ struct DeleteConfirmationOverlay: View {
                             .font(.system(size: 16, weight: .medium))
                             .foregroundStyle(.secondary)
                             .frame(maxWidth: .infinity)
-                            .frame(height: 54)
+                            .frame(height: 56)
                             .background(
-                                RoundedRectangle(cornerRadius: 16)
+                                RoundedRectangle(cornerRadius: 18)
                                     .stroke(Color.secondary.opacity(0.25), lineWidth: 1.5)
                             )
                     }
@@ -238,11 +238,11 @@ struct DeleteConfirmationOverlay: View {
             }
             .padding(28)
             .background(
-                RoundedRectangle(cornerRadius: 24)
+                RoundedRectangle(cornerRadius: 28)
                     .fill(colorScheme == .dark ? Color(white: 0.13) : Color.white)
-                    .shadow(color: .black.opacity(colorScheme == .dark ? 0.4 : 0.15), radius: 30, y: 10)
+                    .shadow(color: .black.opacity(colorScheme == .dark ? 0.4 : 0.12), radius: 30, y: 10)
             )
-            .padding(.horizontal, 32)
+            .padding(.horizontal, 28)
         }
     }
 }

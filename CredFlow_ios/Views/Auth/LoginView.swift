@@ -82,10 +82,10 @@ struct LoginView: View {
                             .padding(.horizontal, 24)
                             .padding(.vertical, 28)
                             .background(
-                                RoundedRectangle(cornerRadius: 20)
+                                RoundedRectangle(cornerRadius: 24)
                                     .fill(cardBg)
                                     .shadow(color: .black.opacity(colorScheme == .dark ? 0 : 0.06),
-                                            radius: 12, y: 3)
+                                            radius: 16, y: 4)
                             )
                             .padding(.horizontal, 24)
                             .padding(.top, 44)
@@ -189,9 +189,9 @@ struct LoginView: View {
                                     .transition(.opacity.combined(with: .move(edge: .top)))
                                 }
                             }
-                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                            .clipShape(RoundedRectangle(cornerRadius: 20))
                             .overlay(
-                                RoundedRectangle(cornerRadius: 16)
+                                RoundedRectangle(cornerRadius: 20)
                                     .strokeBorder(
                                         emailError || passwordError
                                             ? Color.red.opacity(0.3)

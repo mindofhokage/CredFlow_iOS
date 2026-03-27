@@ -142,16 +142,16 @@ struct AddExpenseView: View {
                             }
                             .padding(16)
                             .background(
-                                RoundedRectangle(cornerRadius: 16)
+                                RoundedRectangle(cornerRadius: 20)
                                     .fill(cardBg)
                                     .shadow(color: .black.opacity(colorScheme == .dark ? 0 : 0.05), radius: 10, y: 2)
                             )
-                            .padding(.horizontal, 20)
+                            .padding(.horizontal, 24)
 
                             // ── Détails ─────────────────────────────────
                             VStack(alignment: .leading, spacing: 10) {
                                 PremiumSectionLabel(title: loc.t("addExpense.details"))
-                                    .padding(.horizontal, 20)
+                                    .padding(.horizontal, 24)
 
                                 VStack(spacing: 0) {
                                     HStack(spacing: 12) {
@@ -182,11 +182,11 @@ struct AddExpenseView: View {
                                     .padding(.vertical, 16)
                                 }
                                 .background(
-                                    RoundedRectangle(cornerRadius: 16)
+                                    RoundedRectangle(cornerRadius: 20)
                                         .fill(cardBg)
                                         .shadow(color: .black.opacity(colorScheme == .dark ? 0 : 0.05), radius: 10, y: 2)
                                 )
-                                .padding(.horizontal, 20)
+                                .padding(.horizontal, 24)
                             }
 
                             // ── Paid toggle (edit only) ──────────────────
@@ -206,7 +206,7 @@ struct AddExpenseView: View {
                                     .padding(.horizontal, 16)
                                     .padding(.vertical, 14)
                                     .background(
-                                        RoundedRectangle(cornerRadius: 16)
+                                        RoundedRectangle(cornerRadius: 20)
                                             .fill(vm.isPaid
                                                   ? Color.adaptiveBg(colorScheme)
                                                   : cardBg)
@@ -214,7 +214,7 @@ struct AddExpenseView: View {
                                     )
                                 }
                                 .buttonStyle(.plain)
-                                .padding(.horizontal, 20)
+                                .padding(.horizontal, 24)
                             }
 
                             // ── Error ────────────────────────────────────
@@ -253,7 +253,7 @@ struct AddExpenseView: View {
                         ) {
                             Task { await saveExpense() }
                         }
-                        .padding(20)
+                        .padding(24)
                     }
                     .background(colorScheme == .dark ? Color(white: 0.08) : Color.white)
                 }

@@ -101,7 +101,7 @@ struct EditCardView: View {
                                     }
                                     .padding(16)
                                     .background(
-                                        RoundedRectangle(cornerRadius: 16)
+                                        RoundedRectangle(cornerRadius: 20)
                                             .fill(colorScheme == .dark ? Color(white: 0.13) : Color.white)
                                             .shadow(color: .black.opacity(colorScheme == .dark ? 0 : 0.05), radius: 10, y: 2)
                                     )
@@ -181,7 +181,7 @@ struct EditCardView: View {
                                     showDeleteConfirm = true
                                 }
                             }
-                            .padding(.horizontal, 20)
+                            .padding(.horizontal, 24)
                         }
                         .padding(.bottom, 24)
                     }
@@ -192,7 +192,7 @@ struct EditCardView: View {
                         PremiumButton(title: loc.t("common.save"), isLoading: isLoading) {
                             Task { await updateCard() }
                         }
-                        .padding(20)
+                        .padding(24)
                     }
                     .background(colorScheme == .dark ? Color(white: 0.08) : Color.white)
                 }

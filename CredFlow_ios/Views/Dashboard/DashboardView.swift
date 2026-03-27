@@ -6,238 +6,346 @@ struct DashboardView: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(LocalizationManager.self) private var loc
     @State private var vm = DashboardViewModel()
-    @State private var path = NavigationPath()
     @State private var isStackExpanded = false
     @State private var showProfile = false
     @State private var cardToDelete: Card?
     @State private var pressedCardId: UUID?
+    @State private var showHeader = false
+    @State private var showHero = false
+    @State private var showCards = false
+    @State private var showFAB = false
+    @State private var selectedCard: Card?
 
     private let cardH: CGFloat = 216
     private let peekH: CGFloat = 62
     private let expandedGap: CGFloat = 16
 
+    private var cardBg: Color {
+        colorScheme == .dark ? Color(white: 0.13) : Color.white
+    }
+
     var body: some View {
-        NavigationStack(path: $path) {
-            ZStack {
-                PremiumBackground()
+        ZStack {
+            // ── Main dashboard ──────────────────────────────────
+            NavigationStack {
+                ZStack {
+                    PremiumBackground()
 
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 24) {
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 28) {
 
-                        // ── Header ───────────────────────────────────────
-                        headerSection
-                            .padding(.horizontal, 20)
-                            .padding(.top, 4)
+                            // ── Header ───────────────────────────────────────
+                            if showHeader {
+                                headerSection
+                                    .padding(.horizontal, 24)
+                                    .padding(.top, 8)
+                                    .transition(.opacity.combined(with: .scale(scale: 0.96)))
+                            }
 
-                        // ── Stats ────────────────────────────────────────
-                        if !vm.cards.isEmpty {
-                            statsSection
-                                .padding(.horizontal, 20)
-                        }
+                            // ── Hero balance ─────────────────────────────────
+                            if showHero, !vm.cards.isEmpty {
+                                heroBalanceSection
+                                    .padding(.horizontal, 24)
+                                    .transition(.opacity.combined(with: .scale(scale: 0.96)))
+                            }
 
-                        // ── Cards ────────────────────────────────────────
-                        if vm.isLoading {
-                            HStack { Spacer(); ProgressView(); Spacer() }
-                                .padding(.top, 40)
-                        } else if vm.cards.isEmpty {
-                            emptyState
-                        } else {
-                            VStack(alignment: .leading, spacing: 12) {
-                                // Section label
-                                HStack {
-                                    PremiumSectionLabel(title: loc.t("dashboard.myCards"))
-                                    Spacer()
-                                    if vm.cards.count > 1 {
-                                        Button {
-                                            withAnimation(.spring(response: 0.42, dampingFraction: 0.80)) {
-                                                isStackExpanded.toggle()
+                            // ── Cards ────────────────────────────────────────
+                            if vm.isLoading {
+                                HStack { Spacer(); ProgressView(); Spacer() }
+                                    .padding(.top, 40)
+                            } else if vm.cards.isEmpty {
+                                if showCards {
+                                    emptyState
+                                        .transition(.opacity.combined(with: .scale(scale: 0.96)))
+                                }
+                            } else if showCards {
+                                VStack(alignment: .leading, spacing: 12) {
+                                    HStack {
+                                        PremiumSectionLabel(title: loc.t("dashboard.myCards"))
+                                        Spacer()
+                                        if vm.cards.count > 1 {
+                                            Button {
+                                                withAnimation(.spring(response: 0.42, dampingFraction: 0.80)) {
+                                                    isStackExpanded.toggle()
+                                                }
+                                            } label: {
+                                                HStack(spacing: 4) {
+                                                    Text(isStackExpanded ? loc.t("dashboard.collapse") : loc.t("dashboard.viewAll"))
+                                                        .font(.system(size: 12, weight: .medium))
+                                                    Image(systemName: isStackExpanded ? "chevron.up" : "chevron.down")
+                                                        .font(.system(size: 10, weight: .semibold))
+                                                }
+                                                .foregroundStyle(Color.adaptiveBg(colorScheme))
                                             }
-                                        } label: {
-                                            HStack(spacing: 4) {
-                                                Text(isStackExpanded ? loc.t("dashboard.collapse") : loc.t("dashboard.viewAll"))
-                                                    .font(.system(size: 12, weight: .medium))
-                                                Image(systemName: isStackExpanded ? "chevron.up" : "chevron.down")
-                                                    .font(.system(size: 10, weight: .semibold))
-                                            }
-                                            .foregroundStyle(Color.adaptiveBg(colorScheme))
                                         }
                                     }
-                                }
-                                .padding(.horizontal, 20)
+                                    .padding(.horizontal, 24)
 
-                                stackedCardsSection
+                                    stackedCardsSection
+                                }
+                                .transition(.opacity.combined(with: .scale(scale: 0.96)))
+                            }
+
+                            if let err = vm.errorMessage {
+                                Text(err).font(.caption).foregroundStyle(.red)
+                                    .padding(.horizontal, 24)
                             }
                         }
-
-                        if let err = vm.errorMessage {
-                            Text(err).font(.caption).foregroundStyle(.red)
-                                .padding(.horizontal, 20)
-                        }
+                        .padding(.bottom, 100)
                     }
-                    .padding(.bottom, 100)
-                }
-                .refreshable { await vm.loadCards() }
+                    .refreshable { await vm.loadCards() }
 
-                // ── FAB ──────────────────────────────────────────────────
-                VStack {
-                    Spacer()
-                    HStack {
+                    // ── FAB ──────────────────────────────────────────────────
+                    VStack {
                         Spacer()
-                        Button { vm.showAddCard = true } label: {
-                            Image(systemName: "plus")
-                                .font(.system(size: 22, weight: .semibold))
-                                .foregroundStyle(Color.adaptiveFg(colorScheme))
-                                .frame(width: 60, height: 60)
-                                .background(Color.adaptiveBg(colorScheme))
-                                .clipShape(Circle())
-                                .shadow(color: Color.adaptiveBg(colorScheme).opacity(0.30), radius: 14, y: 5)
-                        }
-                        .padding(.trailing, 24)
-                        .padding(.bottom, 32)
-                    }
-                }
-
-                // ── Delete confirmation ──────────────────────────────
-                if cardToDelete != nil {
-                    DeleteConfirmationOverlay(
-                        title: loc.t("dashboard.deleteTitle"),
-                        message: loc.t("dashboard.deleteMessage"),
-                        isLoading: vm.isLoading,
-                        onDelete: {
-                            Task {
-                                if let card = cardToDelete {
-                                    await vm.deleteCard(card)
-                                    cardToDelete = nil
+                        HStack {
+                            Spacer()
+                            if showFAB {
+                                Button { vm.showAddCard = true } label: {
+                                    Image(systemName: "plus")
+                                        .font(.system(size: 22, weight: .semibold))
+                                        .foregroundStyle(Color.adaptiveFg(colorScheme))
+                                        .frame(width: 60, height: 60)
+                                        .background(Color.adaptiveBg(colorScheme))
+                                        .clipShape(Circle())
+                                        .shadow(color: Color.adaptiveBg(colorScheme).opacity(0.30), radius: 14, y: 5)
                                 }
+                                .transition(.scale.combined(with: .opacity))
+                                .padding(.trailing, 24)
+                                .padding(.bottom, 32)
                             }
+                        }
+                    }
+
+                    // ── Delete confirmation ──────────────────────────────
+                    if cardToDelete != nil {
+                        DeleteConfirmationOverlay(
+                            title: loc.t("dashboard.deleteTitle"),
+                            message: loc.t("dashboard.deleteMessage"),
+                            isLoading: vm.isLoading,
+                            onDelete: {
+                                Task {
+                                    if let card = cardToDelete {
+                                        await vm.deleteCard(card)
+                                        cardToDelete = nil
+                                    }
+                                }
+                            },
+                            onCancel: { cardToDelete = nil }
+                        )
+                        .zIndex(10)
+                        .transition(.opacity.combined(with: .scale(scale: 0.95)))
+                    }
+                }
+                .animation(.spring(response: 0.3, dampingFraction: 0.85), value: cardToDelete != nil)
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .principal) {
+                        HStack(spacing: 0) {
+                            Text("Cred").font(.system(size: 20, weight: .thin))
+                            Text("Flow").font(.system(size: 20, weight: .black))
+                        }
+                    }
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button { showProfile = true } label: {
+                            Image(systemName: "person.circle")
+                                .font(.title3)
+                                .foregroundStyle(Color.adaptiveBg(colorScheme))
+                        }
+                    }
+                }
+                .sheet(isPresented: $vm.showAddCard) {
+                    AddCardView { newCard in vm.cards.insert(newCard, at: 0) }
+                        .environment(authService)
+                }
+                .sheet(isPresented: $showProfile) {
+                    ProfileView().environment(authService)
+                }
+            }
+            // ── Card detail overlay ─────────────────────────────
+            if let card = selectedCard {
+                NavigationStack {
+                    CardDetailView(
+                        card: card,
+                        onCardUpdated: { updated in
+                            vm.updateCard(updated)
+                            selectedCard = updated
                         },
-                        onCancel: { cardToDelete = nil }
+                        onCardDeleted: {
+                            vm.cards.removeAll { $0.id == card.id }
+                            dismissDetail()
+                        },
+                        onDismiss: dismissDetail
                     )
-                    .zIndex(10)
-                    .transition(.opacity.combined(with: .scale(scale: 0.95)))
-                }
-            }
-            .animation(.spring(response: 0.3, dampingFraction: 0.85), value: cardToDelete != nil)
-            .navigationBarTitleDisplayMode(.inline)
-            .navigationDestination(for: Card.self) { card in
-                CardDetailView(card: card) { updated in
-                    vm.updateCard(updated)
-                } onCardDeleted: {
-                    vm.cards.removeAll { $0.id == card.id }
-                    path.removeLast()
-                }
-            }
-            .toolbar {
-                ToolbarItem(placement: .principal) {
-                    HStack(spacing: 0) {
-                        Text("Cred").font(.system(size: 20, weight: .thin))
-                        Text("Flow").font(.system(size: 20, weight: .black))
-                    }
-                }
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button { showProfile = true } label: {
-                        Image(systemName: "person.circle")
-                            .font(.title3)
-                            .foregroundStyle(Color.adaptiveBg(colorScheme))
-                    }
-                }
-            }
-            .sheet(isPresented: $vm.showAddCard) {
-                AddCardView { newCard in vm.cards.insert(newCard, at: 0) }
                     .environment(authService)
-            }
-            .sheet(isPresented: $showProfile) {
-                ProfileView().environment(authService)
+                }
+                .zIndex(5)
+                .transition(.move(edge: .trailing))
             }
         }
-        .task { await vm.loadCards() }
+        .task {
+            await vm.loadCards()
+            withAnimation(.snappy(duration: 0.3)) { showHeader = true }
+            try? await Task.sleep(for: .milliseconds(80))
+            withAnimation(.snappy(duration: 0.3)) { showHero = true }
+            try? await Task.sleep(for: .milliseconds(80))
+            withAnimation(.snappy(duration: 0.3)) { showCards = true }
+            try? await Task.sleep(for: .milliseconds(80))
+            withAnimation(.snappy(duration: 0.35)) { showFAB = true }
+        }
+    }
+
+    // MARK: - Navigate to detail
+
+    private func openCard(_ card: Card) {
+        withAnimation(.snappy(duration: 0.35)) {
+            selectedCard = card
+        }
+    }
+
+    private func dismissDetail() {
+        withAnimation(.snappy(duration: 0.35)) {
+            selectedCard = nil
+        }
     }
 
     // MARK: - Header
 
     @ViewBuilder
     private var headerSection: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 4) {
             Text(currentDateString())
-                .font(.system(size: 13, weight: .regular))
+                .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(.tertiary)
                 .textCase(.uppercase)
-                .tracking(0.5)
+                .tracking(1.2)
             HStack(spacing: 0) {
                 Text(loc.t("dashboard.my"))
-                    .font(.system(size: 30, weight: .thin))
+                    .font(.system(size: 32, weight: .thin))
                 Text(loc.t("dashboard.cards"))
-                    .font(.system(size: 30, weight: .black))
+                    .font(.system(size: 32, weight: .black))
             }
         }
     }
 
-    // MARK: - Stats
+    // MARK: - Hero Balance
 
     @ViewBuilder
-    private var statsSection: some View {
-        let totalLimit = vm.cards.reduce(0.0) { $0 + $1.creditLimit }
-        let cardBg = colorScheme == .dark ? Color(white: 0.13) : Color.white
+    private var heroBalanceSection: some View {
+        let progress = vm.totalLimit > 0 ? min(vm.totalSpent / vm.totalLimit, 1.0) : 0
 
-        VStack(spacing: 14) {
-            HStack(spacing: 0) {
-                statCell(
-                    value: fmtCurrency(totalLimit),
-                    label: loc.t("dashboard.totalLimit")
-                )
-                Rectangle()
-                    .fill(Color.secondary.opacity(0.15))
-                    .frame(width: 1, height: 36)
-                statCell(
-                    value: "\(vm.cards.count)",
-                    label: vm.cards.count > 1 ? loc.t("dashboard.cardPlural") : loc.t("dashboard.cardSingular")
-                )
-                Rectangle()
-                    .fill(Color.secondary.opacity(0.15))
-                    .frame(width: 1, height: 36)
-                statCell(
-                    value: currentMonthName(),
-                    label: loc.t("dashboard.activePeriod")
-                )
+        VStack(spacing: 0) {
+
+            // ── Solde principal (grand) ──────────────────────────
+            VStack(spacing: 6) {
+                Text(loc.t("dashboard.totalSpent").uppercased())
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                    .tracking(1.5)
+
+                Text(fmtCurrencyFull(vm.totalSpent))
+                    .font(.system(size: 38, weight: .bold))
+                    .foregroundStyle(.primary)
+                    .minimumScaleFactor(0.6)
+                    .lineLimit(1)
+                    .contentTransition(.numericText())
+                    .animation(.easeInOut(duration: 0.4), value: vm.totalSpent)
             }
+            .frame(maxWidth: .infinity)
+            .padding(.top, 28)
+            .padding(.bottom, 20)
 
-            // Active cards indicator dots
-            HStack(spacing: 5) {
-                ForEach(0..<vm.cards.count, id: \.self) { i in
-                    Capsule()
-                        .fill(Color.adaptiveBg(colorScheme).opacity(isStackExpanded || i == 0 ? 1.0 : 0.25))
-                        .frame(width: isStackExpanded || i == 0 ? 16 : 6, height: 4)
-                        .animation(.spring(response: 0.35, dampingFraction: 0.8), value: isStackExpanded)
+            // ── Progress bar ────────────────────────────────────
+            VStack(spacing: 10) {
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        Capsule()
+                            .fill(Color.secondary.opacity(0.10))
+                            .frame(height: 6)
+                        Capsule()
+                            .fill(Color.adaptiveBg(colorScheme))
+                            .frame(width: max(geo.size.width * progress, 6), height: 6)
+                            .animation(.easeInOut(duration: 0.6), value: progress)
+                    }
                 }
-                Spacer()
-                Image(systemName: "lock.shield")
-                    .font(.system(size: 11))
-                    .foregroundStyle(.tertiary)
-                Text(loc.t("dashboard.secured"))
-                    .font(.system(size: 11))
-                    .foregroundStyle(.tertiary)
+                .frame(height: 6)
+
+                HStack {
+                    Text(fmtCurrency(vm.totalSpent))
+                        .font(.system(size: 11, weight: .semibold))
+                    Text(loc.t("dashboard.outOf"))
+                        .font(.system(size: 11))
+                        .foregroundStyle(.tertiary)
+                    Text(fmtCurrency(vm.totalLimit))
+                        .font(.system(size: 11, weight: .semibold))
+                    Spacer()
+                    Text("\(Int(progress * 100))%")
+                        .font(.system(size: 11, weight: .bold, design: .monospaced))
+                        .foregroundStyle(.secondary)
+                }
             }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 18)
+
+            // ── Divider ─────────────────────────────────────────
+            Rectangle()
+                .fill(Color.secondary.opacity(0.10))
+                .frame(height: 1)
+                .padding(.horizontal, 16)
+
+            // ── Stats row ───────────────────────────────────────
+            HStack(spacing: 0) {
+                miniStat(
+                    icon: "arrow.up.right",
+                    value: fmtCurrency(vm.totalSpent),
+                    label: loc.t("dashboard.totalSpent")
+                )
+
+                Rectangle()
+                    .fill(Color.secondary.opacity(0.10))
+                    .frame(width: 1, height: 32)
+
+                miniStat(
+                    icon: "creditcard",
+                    value: fmtCurrency(vm.totalAvailable),
+                    label: loc.t("dashboard.totalAvailable")
+                )
+
+                Rectangle()
+                    .fill(Color.secondary.opacity(0.10))
+                    .frame(width: 1, height: 32)
+
+                miniStat(
+                    icon: "shield.checkered",
+                    value: "\(vm.cards.count)",
+                    label: vm.cards.count == 1 ? loc.t("dashboard.cardSingular") : loc.t("dashboard.cardPlural")
+                )
+            }
+            .padding(.vertical, 14)
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 18)
         .background(
-            RoundedRectangle(cornerRadius: 20)
+            RoundedRectangle(cornerRadius: 24)
                 .fill(cardBg)
-                .shadow(color: .black.opacity(colorScheme == .dark ? 0 : 0.06), radius: 12, y: 3)
+                .shadow(color: .black.opacity(colorScheme == .dark ? 0 : 0.06), radius: 16, y: 4)
         )
     }
 
     @ViewBuilder
-    private func statCell(value: String, label: String) -> some View {
+    private func miniStat(icon: String, value: String, label: String) -> some View {
         VStack(spacing: 4) {
-            Text(value)
-                .font(.system(size: 17, weight: .bold))
-                .foregroundStyle(.primary)
-                .minimumScaleFactor(0.7)
-                .lineLimit(1)
+            HStack(spacing: 4) {
+                Image(systemName: icon)
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundStyle(.tertiary)
+                Text(value)
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(.primary)
+                    .minimumScaleFactor(0.7)
+                    .lineLimit(1)
+            }
             Text(label)
-                .font(.system(size: 11))
-                .foregroundStyle(.secondary)
+                .font(.system(size: 10))
+                .foregroundStyle(.tertiary)
         }
         .frame(maxWidth: .infinity)
     }
@@ -262,7 +370,7 @@ struct DashboardView: View {
                         .animation(.spring(response: 0.25, dampingFraction: 0.7), value: pressedCardId)
                         .onTapGesture {
                             if n == 1 || isStackExpanded {
-                                path.append(card)
+                                openCard(card)
                             } else {
                                 withAnimation(.spring(response: 0.42, dampingFraction: 0.80)) {
                                     isStackExpanded = true
@@ -277,8 +385,13 @@ struct DashboardView: View {
                             pressedCardId = pressing ? card.id : nil
                         }
                         .animation(.spring(response: 0.42, dampingFraction: 0.80), value: isStackExpanded)
+                        .transition(.asymmetric(
+                            insertion: .scale(scale: 0.92).combined(with: .opacity).combined(with: .offset(y: 30)),
+                            removal: .opacity
+                        ))
                 }
             }
+            .animation(.spring(response: 0.6, dampingFraction: 0.78), value: vm.cards.count)
         }
         .frame(maxWidth: .infinity)
     }
@@ -287,10 +400,9 @@ struct DashboardView: View {
 
     private var emptyState: some View {
         VStack(spacing: 28) {
-            // Icon
             ZStack {
                 RoundedRectangle(cornerRadius: 28)
-                    .fill(colorScheme == .dark ? Color(white: 0.13) : Color.white)
+                    .fill(cardBg)
                     .frame(width: 88, height: 88)
                     .shadow(color: .black.opacity(0.06), radius: 12, y: 4)
                 Image(systemName: "creditcard")
@@ -340,11 +452,13 @@ struct DashboardView: View {
         return f.string(from: NSNumber(value: value)) ?? "\(value)"
     }
 
-    private func currentMonthName() -> String {
-        let fmt = DateFormatter()
-        fmt.dateFormat = "MMMM"
-        fmt.locale = loc.locale
-        return fmt.string(from: .now).capitalized
+    private func fmtCurrencyFull(_ value: Double) -> String {
+        let f = NumberFormatter()
+        f.numberStyle = .currency
+        f.currencyCode = "CAD"
+        f.locale = loc.locale
+        f.maximumFractionDigits = 2
+        return f.string(from: NSNumber(value: value)) ?? "\(value)"
     }
 
     private func currentDateString() -> String {

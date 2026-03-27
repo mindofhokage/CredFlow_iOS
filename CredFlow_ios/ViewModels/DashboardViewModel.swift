@@ -7,7 +7,15 @@ class DashboardViewModel {
     var isLoading = false
     var showAddCard = false
     var errorMessage: String?
-    var totalMonthlySpending: Double = 0
+
+    /// Solde impayé total (toutes cartes, période courante)
+    var totalSpent: Double = 0
+    /// Crédit disponible total
+    var totalAvailable: Double = 0
+
+    var totalLimit: Double {
+        cards.reduce(0) { $0 + $1.creditLimit }
+    }
 
     func loadCards() async {
         // Afficher le cache immédiatement, spinner seulement si aucune donnée
@@ -21,6 +29,7 @@ class DashboardViewModel {
             let fresh = try await CardService.fetchCards()
             cards = fresh
             CacheService.saveCards(fresh)
+            await loadGlobalBalances()
         } catch is CancellationError {
             // Pull-to-refresh can cancel the previous load — ignore it
         } catch let urlError as URLError where urlError.code == .cancelled {
@@ -30,6 +39,26 @@ class DashboardViewModel {
                 errorMessage = error.localizedDescription
             }
         }
+    }
+
+    /// Charge les dépenses impayées de chaque carte pour la période courante
+    func loadGlobalBalances() async {
+        var spent: Double = 0
+        for card in cards {
+            let period = BillingPeriod.current(startDay: card.billingStartDay)
+            // Cache d'abord, puis réseau
+            let expenses: [Expense]
+            if let cached = CacheService.loadExpenses(cardId: card.id, periodStart: period.start) {
+                expenses = cached
+            } else {
+                expenses = (try? await ExpenseService.fetchExpenses(
+                    cardId: card.id, periodStart: period.start, periodEnd: period.end
+                )) ?? []
+            }
+            spent += expenses.filter { !$0.isPaid }.reduce(0) { $0 + $1.amount }
+        }
+        totalSpent = spent
+        totalAvailable = max(totalLimit - spent, 0)
     }
 
     func updateCard(_ card: Card) {

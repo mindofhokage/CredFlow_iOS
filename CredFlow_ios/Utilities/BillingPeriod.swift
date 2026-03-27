@@ -21,6 +21,17 @@ struct BillingPeriod {
         }
     }
 
+    /// Returns the billing period shifted by `monthOffset` months from the current period.
+    /// offset 0 = current, -1 = previous month, +1 = next month, etc.
+    static func period(startDay: Int, monthOffset: Int, referenceDate: Date = .now) -> (start: Date, end: Date) {
+        let base = current(startDay: startDay, referenceDate: referenceDate)
+        guard monthOffset != 0 else { return base }
+        let calendar = Calendar.current
+        let start = calendar.date(byAdding: .month, value: monthOffset, to: base.start)!
+        let end   = calendar.date(byAdding: .month, value: monthOffset, to: base.end)!
+        return (start, end)
+    }
+
     private static func date(year: Int, month: Int, day: Int) -> Date {
         var components = DateComponents()
         components.year  = year
