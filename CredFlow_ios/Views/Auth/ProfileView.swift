@@ -21,13 +21,25 @@ struct ProfileView: View {
     @State private var promptError: String? = nil
     @State private var promptLoading        = false
     @State private var appeared             = false
+    @State private var editFirstName       = ""
+    @State private var editLastName        = ""
 
     private var cardBg: Color {
         colorScheme == .dark ? Color(white: 0.13) : Color.white
     }
 
     private var initial: String {
-        authService.currentUser?.email?.prefix(1).uppercased() ?? "?"
+        if !authService.firstName.isEmpty {
+            return String(authService.firstName.prefix(1)).uppercased()
+        }
+        return authService.currentUser?.email?.prefix(1).uppercased() ?? "?"
+    }
+
+    private var displayName: String {
+        let full = [authService.firstName, authService.lastName]
+            .filter { !$0.isEmpty }
+            .joined(separator: " ")
+        return full.isEmpty ? (authService.currentUser?.email ?? "") : full
     }
 
     private var memberSince: String {
@@ -52,6 +64,19 @@ struct ProfileView: View {
                             .padding(.top, 8)
                             .offset(y: appeared ? 0 : 20)
                             .opacity(appeared ? 1 : 0)
+
+                        // ── Personal Info ────────────────────────────
+                        sectionCard(label: loc.t("profile.personalInfo")) {
+                            nameRow(icon: "person", placeholder: loc.t("profile.firstName"), text: $editFirstName) {
+                                authService.firstName = editFirstName
+                            }
+                            Divider().padding(.leading, 56)
+                            nameRow(icon: "person.fill", placeholder: loc.t("profile.lastName"), text: $editLastName) {
+                                authService.lastName = editLastName
+                            }
+                        }
+                        .offset(y: appeared ? 0 : 25)
+                        .opacity(appeared ? 1 : 0)
 
                         // ── Security ─────────────────────────────────
                         sectionCard(label: loc.t("profile.securityPrivacy")) {
@@ -185,10 +210,14 @@ struct ProfileView: View {
             faceIDPasswordPrompt
         }
         .task {
+            editFirstName = authService.firstName
+            editLastName = authService.lastName
             withAnimation(.spring(response: 0.7, dampingFraction: 0.8)) {
                 appeared = true
             }
         }
+        .onChange(of: editFirstName) { _, val in authService.firstName = val }
+        .onChange(of: editLastName)  { _, val in authService.lastName = val }
     }
 
     // MARK: - Hero Profile Card
@@ -202,17 +231,25 @@ struct ProfileView: View {
                     Circle()
                         .fill(Color.adaptiveBg(colorScheme))
                         .frame(width: 72, height: 72)
+                        .shadow(color: Color.adaptiveBg(colorScheme).opacity(0.18), radius: 10, y: 4)
                     Text(initial)
                         .font(.system(size: 28, weight: .bold))
                         .foregroundStyle(Color.adaptiveFg(colorScheme))
                 }
 
                 VStack(spacing: 4) {
-                    Text(authService.currentUser?.email ?? "")
-                        .font(.system(size: 16, weight: .semibold))
+                    Text(displayName)
+                        .font(.system(size: 18, weight: .semibold))
                         .foregroundStyle(.primary)
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
+
+                    if !authService.firstName.isEmpty {
+                        Text(authService.currentUser?.email ?? "")
+                            .font(.system(size: 13))
+                            .foregroundStyle(.tertiary)
+                            .lineLimit(1)
+                    }
 
                     HStack(spacing: 6) {
                         Circle()
@@ -222,6 +259,7 @@ struct ProfileView: View {
                             .font(.system(size: 12))
                             .foregroundStyle(.secondary)
                     }
+                    .padding(.top, 2)
                 }
             }
             .frame(maxWidth: .infinity)
@@ -230,7 +268,7 @@ struct ProfileView: View {
 
             // Divider
             Rectangle()
-                .fill(Color.secondary.opacity(0.10))
+                .fill(Color.secondary.opacity(0.08))
                 .frame(height: 1)
                 .padding(.horizontal, 16)
 
@@ -243,8 +281,8 @@ struct ProfileView: View {
                 )
 
                 Rectangle()
-                    .fill(Color.secondary.opacity(0.10))
-                    .frame(width: 1, height: 32)
+                    .fill(Color.secondary.opacity(0.08))
+                    .frame(width: 1, height: 36)
 
                 miniStat(
                     icon: "calendar",
@@ -253,8 +291,8 @@ struct ProfileView: View {
                 )
 
                 Rectangle()
-                    .fill(Color.secondary.opacity(0.10))
-                    .frame(width: 1, height: 32)
+                    .fill(Color.secondary.opacity(0.08))
+                    .frame(width: 1, height: 36)
 
                 miniStat(
                     icon: "globe",
@@ -262,28 +300,53 @@ struct ProfileView: View {
                     label: loc.t("profile.language")
                 )
             }
-            .padding(.vertical, 14)
+            .padding(.vertical, 16)
         }
         .background(
             RoundedRectangle(cornerRadius: 24)
-                .fill(cardBg)
-                .shadow(color: .black.opacity(colorScheme == .dark ? 0 : 0.06), radius: 16, y: 4)
+                .fill(colorScheme == .dark
+                      ? Color(white: 0.13).opacity(0.7)
+                      : Color.white.opacity(0.7))
+                .background(
+                    RoundedRectangle(cornerRadius: 24)
+                        .fill(.ultraThinMaterial)
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 24))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 24)
+                        .strokeBorder(
+                            LinearGradient(
+                                colors: [
+                                    Color.white.opacity(colorScheme == .dark ? 0.12 : 0.6),
+                                    Color.white.opacity(colorScheme == .dark ? 0.04 : 0.15)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 0.5
+                        )
+                )
+                .shadow(color: .black.opacity(colorScheme == .dark ? 0.3 : 0.06), radius: 20, y: 6)
+                .shadow(color: .black.opacity(colorScheme == .dark ? 0 : 0.03), radius: 4, y: 2)
         )
     }
 
     @ViewBuilder
     private func miniStat(icon: String, value: String, label: String) -> some View {
-        VStack(spacing: 4) {
-            HStack(spacing: 4) {
+        VStack(spacing: 6) {
+            ZStack {
+                Circle()
+                    .fill(Color.adaptiveBg(colorScheme).opacity(0.08))
+                    .frame(width: 28, height: 28)
                 Image(systemName: icon)
-                    .font(.system(size: 9, weight: .semibold))
-                    .foregroundStyle(.tertiary)
-                Text(value)
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundStyle(.primary)
-                    .minimumScaleFactor(0.7)
-                    .lineLimit(1)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(Color.adaptiveBg(colorScheme))
             }
+            Text(value)
+                .font(.system(size: 12, weight: .bold))
+                .foregroundStyle(.primary)
+                .minimumScaleFactor(0.7)
+                .lineLimit(1)
             Text(label)
                 .font(.system(size: 10))
                 .foregroundStyle(.tertiary)
@@ -427,6 +490,32 @@ struct ProfileView: View {
             Toggle("", isOn: isOn)
                 .labelsHidden()
                 .tint(Color.adaptiveBg(colorScheme))
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 13)
+    }
+
+    @ViewBuilder
+    private func nameRow(icon: String, placeholder: String, text: Binding<String>, onCommit: @escaping () -> Void) -> some View {
+        HStack(spacing: 12) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(Color.adaptiveBg(colorScheme).opacity(0.08))
+                    .frame(width: 32, height: 32)
+                Image(systemName: icon)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(Color.adaptiveBg(colorScheme))
+            }
+            TextField(placeholder, text: text)
+                .font(.system(size: 15))
+                .foregroundStyle(.primary)
+                .submitLabel(.done)
+                .onSubmit { onCommit() }
+            if !text.wrappedValue.isEmpty {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 14))
+                    .foregroundStyle(Color.adaptiveBg(colorScheme).opacity(0.4))
+            }
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 13)

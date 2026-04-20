@@ -18,10 +18,10 @@ struct TransitionView: View {
 
                 // Logo
                 VStack(spacing: 8) {
-                    HStack(spacing: 0) {
-                        Text("Cred").font(.system(size: 38, weight: .thin))
-                        Text("Flow").font(.system(size: 38, weight: .black))
-                    }
+                    Image("credflow_logo")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 80, height: 80)
                     Text(loc.t("app.tagline"))
                         .font(.system(size: 13))
                         .foregroundStyle(.tertiary)

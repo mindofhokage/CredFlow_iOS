@@ -9,6 +9,16 @@ class AuthService {
     var isLoading        = false
     var errorMessage: String? = nil
 
+    var firstName: String {
+        get { UserDefaults.standard.string(forKey: "credflow_first_name") ?? "" }
+        set { UserDefaults.standard.set(newValue, forKey: "credflow_first_name") }
+    }
+
+    var lastName: String {
+        get { UserDefaults.standard.string(forKey: "credflow_last_name") ?? "" }
+        set { UserDefaults.standard.set(newValue, forKey: "credflow_last_name") }
+    }
+
     private var client: SupabaseClient { SupabaseManager.shared.client }
 
     // MARK: - Auth

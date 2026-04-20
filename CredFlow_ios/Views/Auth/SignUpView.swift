@@ -45,13 +45,10 @@ struct SignUpView: View {
 
                     // Title
                     VStack(spacing: 6) {
-                        HStack(spacing: 0) {
-                            Text("Cred")
-                                .font(.system(size: 40, weight: .thin))
-                            Text("Flow")
-                                .font(.system(size: 40, weight: .black))
-                        }
-                        .tracking(-1)
+                        Image("credflow_logo")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 80, height: 80)
                         Text(loc.t("signup.subtitle"))
                             .font(.system(size: 14))
                             .foregroundStyle(.secondary)

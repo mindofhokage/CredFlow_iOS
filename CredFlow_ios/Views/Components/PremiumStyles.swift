@@ -34,7 +34,58 @@ struct PremiumBackground: View {
                     .blur(radius: 40)
             }
             .allowsHitTesting(false)
+
+            // Subtle noise grain
+            NoiseTexture()
+                .opacity(colorScheme == .dark ? 0.04 : 0.03)
+                .ignoresSafeArea()
+                .allowsHitTesting(false)
         }
+    }
+}
+
+// MARK: - Noise Texture
+
+private struct NoiseTexture: View {
+    private static let noiseImage: UIImage = {
+        let size = 128
+        var pixels = [UInt8](repeating: 0, count: size * size)
+        var rng = SplitMix64(seed: 42)
+        for i in 0..<pixels.count {
+            pixels[i] = UInt8(rng.next() % 256)
+        }
+        let cgImage = pixels.withUnsafeBufferPointer { buf -> CGImage in
+            let data = Data(buffer: buf)
+            let provider = CGDataProvider(data: data as CFData)!
+            return CGImage(
+                width: size, height: size,
+                bitsPerComponent: 8, bitsPerPixel: 8,
+                bytesPerRow: size,
+                space: CGColorSpaceCreateDeviceGray(),
+                bitmapInfo: CGBitmapInfo(rawValue: 0),
+                provider: provider,
+                decode: nil, shouldInterpolate: false,
+                intent: .defaultIntent
+            )!
+        }
+        return UIImage(cgImage: cgImage)
+    }()
+
+    var body: some View {
+        Image(uiImage: Self.noiseImage)
+            .resizable(resizingMode: .tile)
+    }
+}
+
+private struct SplitMix64: RandomNumberGenerator {
+    private var state: UInt64
+    init(seed: UInt64) { state = seed }
+    mutating func next() -> UInt64 {
+        state &+= 0x9e3779b97f4a7c15
+        var z = state
+        z = (z ^ (z >> 30)) &* 0xbf58476d1ce4e5b9
+        z = (z ^ (z >> 27)) &* 0x94d049bb133111eb
+        return z ^ (z >> 31)
     }
 }
 

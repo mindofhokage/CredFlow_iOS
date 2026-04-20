@@ -90,7 +90,9 @@ struct CreditCardWidget: View {
         }
         .frame(width: 343, height: 216)
         .clipShape(RoundedRectangle(cornerRadius: 22))
-        .shadow(color: .black.opacity(0.45), radius: 24, x: 0, y: 12)
+        .shadow(color: .black.opacity(0.12), radius: 3, x: 0, y: 2)
+        .shadow(color: .black.opacity(0.20), radius: 12, x: 0, y: 6)
+        .shadow(color: .black.opacity(0.30), radius: 28, x: 0, y: 14)
     }
 
     // MARK: - Puce EMV

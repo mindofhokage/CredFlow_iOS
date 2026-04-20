@@ -1,5 +1,6 @@
 
 import SwiftUI
+internal import Auth
 
 struct DashboardView: View {
     @Environment(AuthService.self) private var authService
@@ -15,6 +16,7 @@ struct DashboardView: View {
     @State private var showCards = false
     @State private var showFAB = false
     @State private var selectedCard: Card?
+    @State private var fabGlow = false
 
     private let cardH: CGFloat = 216
     private let peekH: CGFloat = 62
@@ -90,6 +92,7 @@ struct DashboardView: View {
                                 Text(err).font(.caption).foregroundStyle(.red)
                                     .padding(.horizontal, 24)
                             }
+
                         }
                         .padding(.bottom, 100)
                     }
@@ -102,17 +105,32 @@ struct DashboardView: View {
                             Spacer()
                             if showFAB {
                                 Button { vm.showAddCard = true } label: {
-                                    Image(systemName: "plus")
-                                        .font(.system(size: 22, weight: .semibold))
-                                        .foregroundStyle(Color.adaptiveFg(colorScheme))
-                                        .frame(width: 60, height: 60)
-                                        .background(Color.adaptiveBg(colorScheme))
-                                        .clipShape(Circle())
-                                        .shadow(color: Color.adaptiveBg(colorScheme).opacity(0.30), radius: 14, y: 5)
+                                    ZStack {
+                                        // Glow pulse
+                                        Circle()
+                                            .fill(Color.adaptiveBg(colorScheme).opacity(0.15))
+                                            .frame(width: 80, height: 80)
+                                            .scaleEffect(fabGlow ? 1.15 : 0.9)
+                                            .opacity(fabGlow ? 0 : 0.5)
+
+                                        Image(systemName: "plus")
+                                            .font(.system(size: 22, weight: .semibold))
+                                            .foregroundStyle(Color.adaptiveFg(colorScheme))
+                                            .frame(width: 60, height: 60)
+                                            .background(Color.adaptiveBg(colorScheme))
+                                            .clipShape(Circle())
+                                            .shadow(color: Color.adaptiveBg(colorScheme).opacity(0.25), radius: 16, y: 6)
+                                            .shadow(color: Color.adaptiveBg(colorScheme).opacity(0.10), radius: 4, y: 2)
+                                    }
                                 }
                                 .transition(.scale.combined(with: .opacity))
                                 .padding(.trailing, 24)
                                 .padding(.bottom, 32)
+                                .onAppear {
+                                    withAnimation(.easeInOut(duration: 1.8).repeatForever(autoreverses: false)) {
+                                        fabGlow = true
+                                    }
+                                }
                             }
                         }
                     }
@@ -141,9 +159,15 @@ struct DashboardView: View {
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .principal) {
-                        HStack(spacing: 0) {
-                            Text("Cred").font(.system(size: 20, weight: .thin))
-                            Text("Flow").font(.system(size: 20, weight: .black))
+                        HStack(spacing: 6) {
+                            Image("credflow_logo")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(height: 24)
+                            HStack(spacing: 0) {
+                                Text("Cred").font(.system(size: 18, weight: .thin))
+                                Text("Flow").font(.system(size: 18, weight: .black))
+                            }
                         }
                     }
                     ToolbarItem(placement: .navigationBarTrailing) {
@@ -211,6 +235,15 @@ struct DashboardView: View {
 
     // MARK: - Header
 
+    private var userFirstName: String {
+        if !authService.firstName.isEmpty {
+            return authService.firstName
+        }
+        guard let email = authService.currentUser?.email else { return "" }
+        let local = email.components(separatedBy: "@").first ?? ""
+        return local.prefix(1).uppercased() + local.dropFirst()
+    }
+
     @ViewBuilder
     private var headerSection: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -219,11 +252,11 @@ struct DashboardView: View {
                 .foregroundStyle(.tertiary)
                 .textCase(.uppercase)
                 .tracking(1.2)
-            HStack(spacing: 0) {
-                Text(loc.t("dashboard.my"))
-                    .font(.system(size: 32, weight: .thin))
-                Text(loc.t("dashboard.cards"))
-                    .font(.system(size: 32, weight: .black))
+            HStack(spacing: 6) {
+                Text(loc.t("dashboard.hello"))
+                    .font(.system(size: 28, weight: .thin))
+                Text(userFirstName)
+                    .font(.system(size: 28, weight: .black))
             }
         }
     }
@@ -236,60 +269,51 @@ struct DashboardView: View {
 
         VStack(spacing: 0) {
 
-            // ── Solde principal (grand) ──────────────────────────
-            VStack(spacing: 6) {
-                Text(loc.t("dashboard.totalSpent").uppercased())
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(.secondary)
-                    .tracking(1.5)
+            // ── Ring gauge + solde ──────────────────────────────
+            ZStack {
+                // Track
+                Circle()
+                    .stroke(Color.secondary.opacity(0.08), lineWidth: 8)
+                    .frame(width: 150, height: 150)
 
-                Text(fmtCurrencyFull(vm.totalSpent))
-                    .font(.system(size: 38, weight: .bold))
-                    .foregroundStyle(.primary)
-                    .minimumScaleFactor(0.6)
-                    .lineLimit(1)
-                    .contentTransition(.numericText())
-                    .animation(.easeInOut(duration: 0.4), value: vm.totalSpent)
+                // Progress arc
+                Circle()
+                    .trim(from: 0, to: progress)
+                    .stroke(
+                        Color.adaptiveBg(colorScheme),
+                        style: StrokeStyle(lineWidth: 8, lineCap: .round)
+                    )
+                    .frame(width: 150, height: 150)
+                    .rotationEffect(.degrees(-90))
+                    .animation(.easeInOut(duration: 0.8), value: progress)
+
+                // Center content
+                VStack(spacing: 2) {
+                    Text(fmtCurrencyFull(vm.totalSpent))
+                        .font(.system(size: 22, weight: .bold))
+                        .foregroundStyle(.primary)
+                        .minimumScaleFactor(0.6)
+                        .lineLimit(1)
+                        .contentTransition(.numericText())
+                        .animation(.easeInOut(duration: 0.4), value: vm.totalSpent)
+
+                    Text(loc.t("dashboard.outOf") + " " + fmtCurrency(vm.totalLimit))
+                        .font(.system(size: 11))
+                        .foregroundStyle(.tertiary)
+
+                    Text("\(Int(progress * 100))%")
+                        .font(.system(size: 12, weight: .bold, design: .monospaced))
+                        .foregroundStyle(.secondary)
+                        .padding(.top, 2)
+                }
             }
             .frame(maxWidth: .infinity)
             .padding(.top, 28)
-            .padding(.bottom, 20)
-
-            // ── Progress bar ────────────────────────────────────
-            VStack(spacing: 10) {
-                GeometryReader { geo in
-                    ZStack(alignment: .leading) {
-                        Capsule()
-                            .fill(Color.secondary.opacity(0.10))
-                            .frame(height: 6)
-                        Capsule()
-                            .fill(Color.adaptiveBg(colorScheme))
-                            .frame(width: max(geo.size.width * progress, 6), height: 6)
-                            .animation(.easeInOut(duration: 0.6), value: progress)
-                    }
-                }
-                .frame(height: 6)
-
-                HStack {
-                    Text(fmtCurrency(vm.totalSpent))
-                        .font(.system(size: 11, weight: .semibold))
-                    Text(loc.t("dashboard.outOf"))
-                        .font(.system(size: 11))
-                        .foregroundStyle(.tertiary)
-                    Text(fmtCurrency(vm.totalLimit))
-                        .font(.system(size: 11, weight: .semibold))
-                    Spacer()
-                    Text("\(Int(progress * 100))%")
-                        .font(.system(size: 11, weight: .bold, design: .monospaced))
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .padding(.horizontal, 20)
-            .padding(.bottom, 18)
+            .padding(.bottom, 24)
 
             // ── Divider ─────────────────────────────────────────
             Rectangle()
-                .fill(Color.secondary.opacity(0.10))
+                .fill(Color.secondary.opacity(0.08))
                 .frame(height: 1)
                 .padding(.horizontal, 16)
 
@@ -302,8 +326,8 @@ struct DashboardView: View {
                 )
 
                 Rectangle()
-                    .fill(Color.secondary.opacity(0.10))
-                    .frame(width: 1, height: 32)
+                    .fill(Color.secondary.opacity(0.08))
+                    .frame(width: 1, height: 36)
 
                 miniStat(
                     icon: "creditcard",
@@ -312,8 +336,8 @@ struct DashboardView: View {
                 )
 
                 Rectangle()
-                    .fill(Color.secondary.opacity(0.10))
-                    .frame(width: 1, height: 32)
+                    .fill(Color.secondary.opacity(0.08))
+                    .frame(width: 1, height: 36)
 
                 miniStat(
                     icon: "shield.checkered",
@@ -321,28 +345,53 @@ struct DashboardView: View {
                     label: vm.cards.count == 1 ? loc.t("dashboard.cardSingular") : loc.t("dashboard.cardPlural")
                 )
             }
-            .padding(.vertical, 14)
+            .padding(.vertical, 16)
         }
         .background(
             RoundedRectangle(cornerRadius: 24)
-                .fill(cardBg)
-                .shadow(color: .black.opacity(colorScheme == .dark ? 0 : 0.06), radius: 16, y: 4)
+                .fill(colorScheme == .dark
+                      ? Color(white: 0.13).opacity(0.7)
+                      : Color.white.opacity(0.7))
+                .background(
+                    RoundedRectangle(cornerRadius: 24)
+                        .fill(.ultraThinMaterial)
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 24))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 24)
+                        .strokeBorder(
+                            LinearGradient(
+                                colors: [
+                                    Color.white.opacity(colorScheme == .dark ? 0.12 : 0.6),
+                                    Color.white.opacity(colorScheme == .dark ? 0.04 : 0.15)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 0.5
+                        )
+                )
+                .shadow(color: .black.opacity(colorScheme == .dark ? 0.3 : 0.06), radius: 20, y: 6)
+                .shadow(color: .black.opacity(colorScheme == .dark ? 0 : 0.03), radius: 4, y: 2)
         )
     }
 
     @ViewBuilder
     private func miniStat(icon: String, value: String, label: String) -> some View {
-        VStack(spacing: 4) {
-            HStack(spacing: 4) {
+        VStack(spacing: 6) {
+            ZStack {
+                Circle()
+                    .fill(Color.adaptiveBg(colorScheme).opacity(0.08))
+                    .frame(width: 28, height: 28)
                 Image(systemName: icon)
-                    .font(.system(size: 9, weight: .semibold))
-                    .foregroundStyle(.tertiary)
-                Text(value)
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundStyle(.primary)
-                    .minimumScaleFactor(0.7)
-                    .lineLimit(1)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(Color.adaptiveBg(colorScheme))
             }
+            Text(value)
+                .font(.system(size: 13, weight: .bold))
+                .foregroundStyle(.primary)
+                .minimumScaleFactor(0.7)
+                .lineLimit(1)
             Text(label)
                 .font(.system(size: 10))
                 .foregroundStyle(.tertiary)

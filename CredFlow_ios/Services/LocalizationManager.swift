@@ -129,6 +129,7 @@ struct Translations {
         "signup.backToLogin":        [.fr: "Retour à la connexion",  .en: "Back to sign in"],
 
         // ─── Dashboard ──────────────────────────────────────
+        "dashboard.hello":           [.fr: "Bonjour,", .en: "Hello,"],
         "dashboard.my":              [.fr: "Mes ",    .en: "My "],
         "dashboard.cards":           [.fr: "Cartes",  .en: "Cards"],
         "dashboard.myCards":         [.fr: "Mes cartes",    .en: "My cards"],
@@ -146,6 +147,7 @@ struct Translations {
         "dashboard.addFirstCard":    [.fr: "Ajoutez votre première carte de crédit\npour suivre vos dépenses",
                                       .en: "Add your first credit card\nto track your expenses"],
         "dashboard.addCard":         [.fr: "Ajouter une carte", .en: "Add a card"],
+        "dashboard.myAccount":       [.fr: "Mon compte",       .en: "My account"],
         "dashboard.deleteTitle":     [.fr: "Supprimer la carte ?", .en: "Delete card?"],
         "dashboard.deleteMessage":   [.fr: "Toutes les dépenses associées seront également supprimées. Cette action est irréversible.",
                                       .en: "All associated expenses will also be deleted. This action cannot be undone."],
@@ -234,6 +236,9 @@ struct Translations {
         "profile.secured":           [.fr: "Sécurisé",      .en: "Secured"],
         "profile.account":           [.fr: "Compte",         .en: "Account"],
         "profile.member":            [.fr: "Membre",         .en: "Member"],
+        "profile.personalInfo":      [.fr: "Informations personnelles", .en: "Personal info"],
+        "profile.firstName":         [.fr: "Prénom",          .en: "First name"],
+        "profile.lastName":          [.fr: "Nom",             .en: "Last name"],
 
         // ─── ChangePassword ─────────────────────────────────
         "changePassword.title":          [.fr: "Mot de passe",               .en: "Password"],

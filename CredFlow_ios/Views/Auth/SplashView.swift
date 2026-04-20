@@ -19,13 +19,12 @@ struct SplashView: View {
 
                 // ── Logo ─────────────────────────────────────────
                 VStack(spacing: 10) {
-                    HStack(spacing: 0) {
-                        Text("Cred").font(.system(size: 52, weight: .thin))
-                        Text("Flow").font(.system(size: 52, weight: .black))
-                    }
-                    .tracking(-0.5)
-                    .scaleEffect(logoScale)
-                    .opacity(logoOpacity)
+                    Image("credflow_logo")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 100, height: 100)
+                        .scaleEffect(logoScale)
+                        .opacity(logoOpacity)
 
                     Text(loc.t("app.tagline"))
                         .font(.system(size: 13, weight: .regular))
