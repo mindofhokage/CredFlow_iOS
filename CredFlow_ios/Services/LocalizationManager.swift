@@ -86,7 +86,7 @@ struct Translations {
         "common.back":              [.fr: "Retour",           .en: "Back"],
 
         // ─── App ────────────────────────────────────────────
-        "app.tagline":              [.fr: "Votre gestionnaire de crédit", .en: "Your credit manager"],
+        "app.tagline":              [.fr: "CredFlow", .en: "CredFlow"],
 
         // ─── Biometric ──────────────────────────────────────
         "biometric.unlockFaceID":      [.fr: "Déverrouiller avec Face ID",  .en: "Unlock with Face ID"],

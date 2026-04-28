@@ -26,11 +26,13 @@ struct SplashView: View {
                         .scaleEffect(logoScale)
                         .opacity(logoOpacity)
 
-                    Text(loc.t("app.tagline"))
-                        .font(.system(size: 13, weight: .regular))
-                        .foregroundStyle(.tertiary)
-                        .tracking(0.5)
-                        .opacity(taglineOpacity)
+                    HStack(spacing: 0) {
+                        Text("Cred").font(.system(size: 20, weight: .thin))
+                        Text("Flow").font(.system(size: 20, weight: .black))
+                    }
+                    .tracking(-0.3)
+                    .foregroundStyle(.tertiary)
+                    .opacity(taglineOpacity)
                 }
 
                 Spacer()

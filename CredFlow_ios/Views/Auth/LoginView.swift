@@ -45,10 +45,12 @@ struct LoginView: View {
                                 .resizable()
                                 .scaledToFit()
                                 .frame(width: 90, height: 90)
-                            Text(loc.t("app.tagline"))
-                                .font(.system(size: 13, weight: .regular))
-                                .foregroundStyle(.tertiary)
-                                .tracking(0.4)
+                            HStack(spacing: 0) {
+                                Text("Cred").font(.system(size: 20, weight: .thin))
+                                Text("Flow").font(.system(size: 20, weight: .black))
+                            }
+                            .tracking(-0.3)
+                            .foregroundStyle(.tertiary)
                         }
 
                         // ── Face ID ───────────────────────────────────────
@@ -294,10 +296,17 @@ struct LoginView: View {
                 } // GeometryReader
 
                 // Version
-                Text("CredFlow v\(appVersion)")
-                    .font(.system(size: 11))
-                    .foregroundStyle(.tertiary)
-                    .padding(.bottom, 14)
+                HStack(spacing: 0) {
+                    HStack(spacing: 0) {
+                        Text("Cred").font(.system(size: 11, weight: .thin))
+                        Text("Flow").font(.system(size: 11, weight: .black))
+                    }
+                    .tracking(-0.2)
+                    Text(" v\(appVersion)")
+                        .font(.system(size: 11, weight: .regular))
+                }
+                .foregroundStyle(.tertiary)
+                .padding(.bottom, 14)
             }
         }
         .sheet(isPresented: $showSignUp) {

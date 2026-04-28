@@ -34,9 +34,11 @@ struct BiometricLockView: View {
                         .scaledToFit()
                         .frame(width: 80, height: 80)
                     HStack(spacing: 0) {
-                        Text("Cred").font(.system(size: 22, weight: .thin))
-                        Text("Flow").font(.system(size: 22, weight: .black))
+                        Text("Cred").font(.system(size: 20, weight: .thin))
+                        Text("Flow").font(.system(size: 20, weight: .black))
                     }
+                    .tracking(-0.3)
+                    .foregroundStyle(.tertiary)
                 }
 
                 Spacer()
